@@ -1,13 +1,12 @@
 "use client";
 
-import { FormEvent, ReactNode, useEffect, useMemo, useState } from "react";
-import { BarChart3, BookOpen, Check, ChevronRight, CircleDollarSign, Coffee, IndianRupee, LayoutDashboard, Menu as MenuIcon, Plus, ReceiptIndianRupee, Search, Settings, ShoppingBag, Store, TrendingDown, TrendingUp, WalletCards, X } from "lucide-react";
+import { FormEvent, ReactNode, useEffect, useState } from "react";
+import { BarChart3, BookOpen, Check, ChevronRight, CircleDollarSign, Cloud, Coffee, Download, IndianRupee, LayoutDashboard, Plus, ReceiptIndianRupee, Search, Settings, ShoppingBag, Store, TrendingDown, TrendingUp, WalletCards, WifiOff, X } from "lucide-react";
+
+import type { MenuItem, Order, ShopData, Transaction } from "@/lib/shop-data";
 
 type View = "dashboard" | "orders" | "menu" | "cashflow" | "expenses" | "storefront";
-type MenuItem = { id: string; name: string; category: string; price: number; isAvailable: boolean };
-type Order = { id: string; orderNo: number; customer: string; itemCount: number; total: number; status: string; createdAt: string };
-type Transaction = { id: string; type: "sale" | "expense"; category: string; amount: number; note: string; createdAt: string };
-type ShopData = { menu: MenuItem[]; orders: Order[]; transactions: Transaction[] };
+type InstallPromptEvent = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: "accepted" | "dismissed" }> };
 
 const nav: { id: View; label: string; icon: typeof Store }[] = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -20,7 +19,7 @@ const nav: { id: View; label: string; icon: typeof Store }[] = [
 
 const money = (value: number) => `₹${value.toLocaleString("en-IN")}`;
 const todayLabel = new Intl.DateTimeFormat("en-IN", { weekday: "long", day: "numeric", month: "long" }).format(new Date());
-const storageKey = "irani-tea-shop-data-v1";
+const storageKey = "irani-tea-shop-data-v2";
 const starterMenu: MenuItem[] = [
   { id: "irani-tea", name: "Irani Tea", category: "Tea", price: 15, isAvailable: true },
   { id: "lemon-tea", name: "Lemon Tea", category: "Tea", price: 20, isAvailable: true },
@@ -41,37 +40,58 @@ export default function Home() {
   const [error, setError] = useState("");
   const [modal, setModal] = useState<"menu" | "sale" | "expense" | "order" | null>(null);
   const [query, setQuery] = useState("");
+  const [syncState, setSyncState] = useState<"synced" | "local" | "offline">("synced");
+  const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(null);
 
   async function loadData() {
     try {
-      const saved = window.localStorage.getItem(storageKey);
-      setData(saved ? JSON.parse(saved) as ShopData : starterData);
+      const response = await fetch("/api/shop", { cache: "no-store" });
+      if (!response.ok) throw new Error("Database unavailable");
+      const fresh = await response.json() as ShopData;
+      setData(fresh);
+      window.localStorage.setItem(storageKey, JSON.stringify(fresh));
+      setSyncState("synced");
       setError("");
     } catch {
-      setData(starterData);
-      setError("Saved data could not be read. A fresh local shop book was opened.");
+      const saved = window.localStorage.getItem(storageKey);
+      setData(saved ? JSON.parse(saved) as ShopData : starterData);
+      const state = navigator.onLine ? "local" : "offline";
+      setSyncState(state);
+      setError(state === "offline" ? "You’re offline. Showing the latest saved shop data; editing will resume when the connection returns." : "Neon is not connected. Showing local sample data until DATABASE_URL is configured.");
     } finally { setLoading(false); }
   }
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => {
+    queueMicrotask(() => void loadData());
+    if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => undefined);
+    const onOnline = () => loadData();
+    const onOffline = () => setSyncState("offline");
+    const onInstall = (event: Event) => { event.preventDefault(); setInstallPrompt(event as InstallPromptEvent); };
+    window.addEventListener("online", onOnline);
+    window.addEventListener("offline", onOffline);
+    window.addEventListener("beforeinstallprompt", onInstall);
+    return () => {
+      window.removeEventListener("online", onOnline);
+      window.removeEventListener("offline", onOffline);
+      window.removeEventListener("beforeinstallprompt", onInstall);
+    };
+  }, []);
 
   async function post(payload: Record<string, unknown>) {
-    setData((current) => {
-      const kind = String(payload.kind ?? "");
-      let next = current;
-      if (kind === "menu") next = { ...current, menu: [...current.menu, { id: crypto.randomUUID(), name: String(payload.name), category: String(payload.category), price: Number(payload.price), isAvailable: true }] };
-      if (kind === "menu-toggle") next = { ...current, menu: current.menu.map((item) => item.id === payload.id ? { ...item, isAvailable: Boolean(payload.isAvailable) } : item) };
-      if (kind === "transaction" || kind === "sale" || kind === "expense") next = { ...current, transactions: [{ id: crypto.randomUUID(), type: payload.type === "expense" || kind === "expense" ? "expense" : "sale", category: String(payload.category), amount: Number(payload.amount), note: String(payload.note ?? ""), createdAt: new Date().toISOString() }, ...current.transactions] };
-      if (kind === "order") {
-        const orderNo = Math.max(100, ...current.orders.map((order) => order.orderNo)) + 1;
-        const order: Order = { id: crypto.randomUUID(), orderNo, customer: String(payload.customer || "Walk-in"), itemCount: Number(payload.itemCount || 1), total: Number(payload.total), status: "preparing", createdAt: new Date().toISOString() };
-        const sale: Transaction = { id: crypto.randomUUID(), type: "sale", category: "Orders", amount: order.total, note: `Order #${orderNo}`, createdAt: order.createdAt };
-        next = { ...current, orders: [order, ...current.orders], transactions: [sale, ...current.transactions] };
-      }
-      if (kind === "order-status") next = { ...current, orders: current.orders.map((order) => order.id === payload.id ? { ...order, status: String(payload.status) } : order) };
-      window.localStorage.setItem(storageKey, JSON.stringify(next));
-      return next;
-    });
+    if (!navigator.onLine) throw new Error("This entry needs an internet connection to sync with Neon.");
+    const response = await fetch("/api/shop", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+    const result = await response.json() as ShopData & { error?: string };
+    if (!response.ok) throw new Error(result.error || "Could not save this entry.");
+    setData(result);
+    window.localStorage.setItem(storageKey, JSON.stringify(result));
+    setSyncState("synced");
+  }
+
+  async function installApp() {
+    if (!installPrompt) return;
+    await installPrompt.prompt();
+    const choice = await installPrompt.userChoice;
+    if (choice.outcome === "accepted") setInstallPrompt(null);
   }
 
   const sales = data.transactions.filter((item) => item.type === "sale").reduce((sum, item) => sum + item.amount, 0);
@@ -94,7 +114,7 @@ export default function Home() {
       <main className="workspace">
         <header className="topbar">
           <div><p>{todayLabel}</p><h1>{nav.find((item) => item.id === view)?.label}</h1></div>
-          <div className="top-actions"><button className="search-button" aria-label="Search"><Search size={19}/></button><button className="quick-order" onClick={() => setModal("order")}><Plus size={18}/> New order</button><span className="avatar">IT</span></div>
+          <div className="top-actions"><span className={`sync-state ${syncState}`}>{syncState === "synced" ? <Cloud size={15}/> : <WifiOff size={15}/>}<span>{syncState === "synced" ? "Neon synced" : syncState === "offline" ? "Offline" : "Local cache"}</span></span>{installPrompt ? <button className="install-button" onClick={installApp}><Download size={17}/> Install app</button> : null}<button className="search-button" aria-label="Search"><Search size={19}/></button><button className="quick-order" onClick={() => setModal("order")}><Plus size={18}/> New order</button><span className="avatar">IT</span></div>
         </header>
 
         {error ? <div className="error-banner"><span>{error}</span><button onClick={loadData}>Try again</button></div> : null}

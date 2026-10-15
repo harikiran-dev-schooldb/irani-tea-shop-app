@@ -71,6 +71,10 @@ export default defineConfig(async ({ command }) => {
           ...localBindingConfig,
           ...(command === "serve"
             ? {
+                vars: {
+                  DATABASE_URL: process.env.DATABASE_URL ?? "",
+                  DIRECT_DATABASE_URL: process.env.DIRECT_DATABASE_URL ?? "",
+                },
                 services: [
                   {
                     binding: "CONNECTORS",

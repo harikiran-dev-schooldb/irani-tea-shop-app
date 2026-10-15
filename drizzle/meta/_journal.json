@@ -1,5 +1,20 @@
 {
   "version": "7",
-  "dialect": "sqlite",
-  "entries": []
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1792074299385,
+      "tag": "0000_old_kronos",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1792074315365,
+      "tag": "0001_natural_firebrand",
+      "breakpoints": true
+    }
+  ]
 }
