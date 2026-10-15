@@ -44,6 +44,8 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 .shop-status > span { width: 9px; height: 9px; background: #dda438; border-radius: 50%; box-shadow: 0 0 0 4px rgba(221,164,56,.16); }
 .shop-status strong { font-size: 12px; }
 .settings-row { position: relative; z-index: 1; border-top: 1px solid rgba(80,45,24,.1); border-radius: 0; }
+.owner-card { display: flex; align-items: center; gap: 10px; margin-top: 6px; padding: 10px; background: #f8efe2; border: 1px solid rgba(86,49,26,.1); border-radius: 12px; }
+.owner-avatar { width: 34px; height: 34px; flex: 0 0 34px; display: grid; place-items: center; color: #fff8e9; background: linear-gradient(145deg, #5a2d17, #261008); border-radius: 50%; box-shadow: 0 5px 14px rgba(54,25,10,.18); }.owner-card strong, .owner-card small { display: block; }.owner-card strong { color: #352014; font-size: 11px; }.owner-card small { margin-top: 2px; color: #9a8065; font-size: 9px; }
 .sidebar-backdrop { display: none; }
 
 .workspace { min-width: 0; min-height: 100vh; background: radial-gradient(circle at 82% 8%, rgba(214,154,61,.09), transparent 28%), #f7f1e8; }
@@ -59,15 +61,16 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 .sync-state.local { color: #7e5d2d; background: #f0e6d2; border-color: rgba(126,93,45,.15); }
 .install-button { min-height: 38px; display: inline-flex; align-items: center; gap: 7px; padding: 0 13px; color: var(--coffee); background: transparent; border: 1px solid rgba(66,31,15,.24); border-radius: 10px; font-size: 11px; font-weight: 800; cursor: pointer; }
 .install-button:hover { background: #e5ebe6; }
-.search-button, .avatar { width: 40px; height: 40px; display: grid; place-items: center; border: 1px solid var(--line); background: var(--paper-light); border-radius: 12px; }
-.search-button { cursor: pointer; }
+.search-button, .refresh-button, .avatar { width: 40px; height: 40px; display: grid; place-items: center; border: 1px solid var(--line); background: var(--paper-light); border-radius: 12px; }
+.search-button, .refresh-button { cursor: pointer; }.refresh-button:disabled { opacity: .65; cursor: wait; }
 .avatar { overflow: hidden; color: var(--gold-light); background: var(--espresso); border-color: rgba(201,138,37,.42); border-radius: 50%; font-weight: 700; font-size: 12px; }
 .avatar img { width: 100%; height: 100%; display: block; }
 .quick-order, .primary, .secondary { min-height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 0 16px; font-weight: 700; border: 1px solid var(--brown); cursor: pointer; }
 .quick-order, .primary { color: #fff4df; background: linear-gradient(135deg, var(--coffee), var(--espresso)); border-color: var(--coffee); border-radius: 10px; box-shadow: 0 8px 22px rgba(54,23,10,.19); }
 .secondary { background: transparent; }
-.quick-order, .primary, .secondary, .install-button, .search-button { transition: transform .18s ease, box-shadow .18s ease, background .18s ease; }
+.quick-order, .primary, .secondary, .install-button, .search-button, .refresh-button { transition: transform .18s ease, box-shadow .18s ease, background .18s ease; }
 .quick-order:hover, .primary:hover { transform: translateY(-1px); box-shadow: 0 12px 27px rgba(54,23,10,.24); }.secondary:hover, .install-button:hover, .search-button:hover { background: rgba(201,138,37,.1); }
+.refresh-button:hover { color: var(--brown); background: rgba(201,138,37,.1); }.spinning { animation: spin .75s linear infinite; }
 
 .page-content { width: 100%; max-width: 1920px; margin: 0 auto; padding: clamp(22px, 3vw, 44px) clamp(18px, 3.5vw, 56px) 72px; }
 .welcome { min-height: 280px; position: relative; display: flex; align-items: flex-end; justify-content: space-between; overflow: hidden; padding: 38px; color: #fff3dc; background: linear-gradient(90deg, rgba(24,8,5,.96), rgba(52,21,9,.76) 46%, rgba(46,20,9,.2)), url('/irani-tea-banner.png') center/cover; border: 1px solid rgba(202,138,37,.58); border-radius: 20px; box-shadow: 0 24px 60px rgba(46,19,7,.21); }
@@ -179,3 +182,4 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
   }
 }
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; transition: none !important; } }
+@keyframes spin { to { transform: rotate(360deg); } }

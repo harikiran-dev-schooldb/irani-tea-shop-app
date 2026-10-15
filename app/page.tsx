@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, ReactNode, useEffect, useState } from "react";
-import { Banknote, BarChart3, BookOpen, CalendarDays, Check, ChevronRight, CircleDollarSign, Cloud, Coffee, Download, IndianRupee, LayoutDashboard, Menu, Plus, ReceiptIndianRupee, Search, Settings, ShoppingBag, Smartphone, Store, TrendingDown, TrendingUp, WalletCards, WifiOff, X } from "lucide-react";
+import { Banknote, BarChart3, BookOpen, CalendarDays, Check, ChevronRight, CircleDollarSign, Cloud, Coffee, Download, IndianRupee, LayoutDashboard, Menu, Plus, ReceiptIndianRupee, RefreshCw, Search, Settings, ShoppingBag, Smartphone, Store, TrendingDown, TrendingUp, UserRound, WalletCards, WifiOff, X } from "lucide-react";
 import Image from "next/image";
 
 import type { MenuItem, Order, ShopData, Transaction } from "@/lib/shop-data";
@@ -53,6 +53,7 @@ export default function Home() {
   const [modal, setModal] = useState<"menu" | "sale" | "expense" | "order" | null>(null);
   const [query, setQuery] = useState("");
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [syncState, setSyncState] = useState<"synced" | "local" | "offline">("synced");
   const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(null);
 
@@ -107,6 +108,11 @@ export default function Home() {
     if (choice.outcome === "accepted") setInstallPrompt(null);
   }
 
+  async function refreshData() {
+    setRefreshing(true);
+    try { await loadData(); } finally { setRefreshing(false); }
+  }
+
   const sales = data.transactions.filter((item) => item.type === "sale").reduce((sum, item) => sum + item.amount, 0);
   const cashSales = data.transactions.filter((item) => item.type === "sale" && (item.paymentMode ?? "cash") === "cash").reduce((sum, item) => sum + item.amount, 0);
   const expenses = data.transactions.filter((item) => item.type === "expense").reduce((sum, item) => sum + item.amount, 0);
@@ -125,12 +131,13 @@ export default function Home() {
         </nav>
         <div className="shop-status"><span/><div><strong>Shop is open</strong><small>7:00 AM – 11:00 PM</small></div></div>
         <button className="settings-row"><Settings size={18}/> Settings</button>
+        <div className="owner-card"><span className="owner-avatar"><UserRound size={17}/></span><div><strong>A Sridevi</strong><small>Shop owner</small></div></div>
       </aside>
 
       <main className="workspace">
         <header className="topbar">
           <div className="topbar-title"><button className="mobile-menu" aria-label="Open main navigation" onClick={() => setMobileNavOpen(true)}><Menu size={20}/></button><Image className="mobile-logo" src="/icon.svg" width={42} height={42} alt=""/><div><p>{todayLabel}</p><h1>{nav.find((item) => item.id === view)?.label}</h1></div></div>
-          <div className="top-actions"><span className={`sync-state ${syncState}`}>{syncState === "synced" ? <Cloud size={15}/> : <WifiOff size={15}/>}<span>{syncState === "synced" ? "Neon synced" : syncState === "offline" ? "Offline" : "Local cache"}</span></span>{installPrompt ? <button className="install-button" onClick={installApp}><Download size={17}/> Install app</button> : null}<button className="search-button" aria-label="Search"><Search size={19}/></button><button className="quick-order" onClick={() => setModal("order")}><Plus size={18}/> New order</button><span className="avatar"><Image src="/icon.svg" width={40} height={40} alt=""/></span></div>
+          <div className="top-actions"><span className={`sync-state ${syncState}`}>{syncState === "synced" ? <Cloud size={15}/> : <WifiOff size={15}/>}<span>{syncState === "synced" ? "Neon synced" : syncState === "offline" ? "Offline" : "Local cache"}</span></span>{installPrompt ? <button className="install-button" onClick={installApp}><Download size={17}/> Install app</button> : null}<button className="refresh-button" aria-label="Refresh shop data" title="Refresh shop data" disabled={refreshing} onClick={refreshData}><RefreshCw className={refreshing ? "spinning" : ""} size={18}/></button><button className="search-button" aria-label="Search"><Search size={19}/></button><button className="quick-order" onClick={() => setModal("order")}><Plus size={18}/> New order</button><span className="avatar"><Image src="/icon.svg" width={40} height={40} alt=""/></span></div>
         </header>
 
         {error ? <div className="error-banner"><span>{error}</span><button onClick={loadData}>Try again</button></div> : null}
