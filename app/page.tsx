@@ -174,6 +174,7 @@ export default function Home() {
     "menu" | "sale" | "expense" | "order" | null
   >(null);
   const [query, setQuery] = useState("");
+  const [selectedDate, setSelectedDate] = useState("");
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [syncState, setSyncState] = useState<"synced" | "local" | "offline">(
@@ -261,15 +262,26 @@ export default function Home() {
     }
   }
 
-  const sales = data.transactions
+  const scopedTransactions = selectedDate
+    ? data.transactions.filter((item) => dateKey(item.createdAt) === selectedDate)
+    : data.transactions;
+  const scopedOrders = selectedDate
+    ? data.orders.filter((item) => dateKey(item.createdAt) === selectedDate)
+    : data.orders;
+  const scopedData: ShopData = {
+    ...data,
+    orders: scopedOrders,
+    transactions: scopedTransactions,
+  };
+  const sales = scopedTransactions
     .filter((item) => item.type === "sale")
     .reduce((sum, item) => sum + item.amount, 0);
-  const cashSales = data.transactions
+  const cashSales = scopedTransactions
     .filter(
       (item) => item.type === "sale" && (item.paymentMode ?? "cash") === "cash",
     )
     .reduce((sum, item) => sum + item.amount, 0);
-  const expenses = data.transactions
+  const expenses = scopedTransactions
     .filter((item) => item.type === "expense")
     .reduce((sum, item) => sum + item.amount, 0);
   const balance = cashSales - expenses;
@@ -368,6 +380,26 @@ export default function Home() {
               <h1>{nav.find((item) => item.id === view)?.label}</h1>
             </div>
           </div>
+          <label className="header-date-filter">
+            <CalendarDays size={17} />
+            <span>Report date</span>
+            <input
+              type="date"
+              aria-label="Filter all reports by date"
+              value={selectedDate}
+              onChange={(event) => setSelectedDate(event.target.value)}
+            />
+            {selectedDate ? (
+              <button
+                type="button"
+                aria-label="Clear report date"
+                title="Show all dates"
+                onClick={() => setSelectedDate("")}
+              >
+                <X size={15} />
+              </button>
+            ) : null}
+          </label>
           <div className="top-actions">
             <span className={`sync-state ${syncState}`}>
               {syncState === "synced" ? (
@@ -423,18 +455,19 @@ export default function Home() {
         ) : null}
         {!loading && view === "dashboard" ? (
           <Dashboard
-            data={data}
+            data={scopedData}
             sales={sales}
             expenses={expenses}
             balance={balance}
             overallNet={overallNet}
+            reportDate={selectedDate}
             setView={setView}
             open={setModal}
           />
         ) : null}
         {!loading && view === "orders" ? (
           <Orders
-            orders={data.orders}
+            orders={scopedOrders}
             post={post}
             open={() => setModal("order")}
           />
@@ -453,12 +486,14 @@ export default function Home() {
             transactions={data.transactions}
             expenses={expenses}
             balance={balance}
+            selectedDate={selectedDate}
+            setSelectedDate={setSelectedDate}
             open={setModal}
           />
         ) : null}
         {!loading && view === "expenses" ? (
           <Expenses
-            transactions={data.transactions.filter(
+            transactions={scopedTransactions.filter(
               (item) => item.type === "expense",
             )}
             total={expenses}
@@ -486,6 +521,7 @@ function Dashboard({
   expenses,
   balance,
   overallNet,
+  reportDate,
   setView,
   open,
 }: {
@@ -494,6 +530,7 @@ function Dashboard({
   expenses: number;
   balance: number;
   overallNet: number;
+  reportDate: string;
   setView: (view: View) => void;
   open: (kind: "sale" | "expense" | "order") => void;
 }) {
@@ -540,9 +577,15 @@ function Dashboard({
     <div className="page-content">
       <section className="welcome">
         <div>
-          <p className="eyebrow">Today at a glance</p>
+          <p className="eyebrow">
+            {reportDate ? "Selected day at a glance" : "All-time at a glance"}
+          </p>
           <h2>Good evening, boss.</h2>
-          <p>Here’s how Irani Tea is doing today.</p>
+          <p>
+            {reportDate
+              ? `Showing the report for ${new Date(`${reportDate}T12:00:00`).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}.`
+              : "Here’s how Irani Tea is doing across all recorded dates."}
+          </p>
         </div>
         <div className="welcome-mark">
           <Coffee size={38} />
@@ -763,14 +806,17 @@ function Cashflow({
   transactions,
   expenses,
   balance,
+  selectedDate,
+  setSelectedDate,
   open,
 }: {
   transactions: Transaction[];
   expenses: number;
   balance: number;
+  selectedDate: string;
+  setSelectedDate: (value: string) => void;
   open: (kind: "sale" | "expense") => void;
 }) {
-  const [selectedDate, setSelectedDate] = useState("");
   const sales = transactions.filter((item) => item.type === "sale");
   const dailyReports = Object.values(
     sales.reduce<
