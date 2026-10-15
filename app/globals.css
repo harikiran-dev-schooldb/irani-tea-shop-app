@@ -136,4 +136,22 @@ button { color: inherit; }
   .page-tools { align-items: stretch; }.search-field { min-width: 0; flex: 1; }.menu-cards { grid-template-columns: 1fr; }.table-head { display: none; }.table-row { grid-template-columns: .55fr 1.2fr .45fr .7fr; padding: 15px; }.table-row > span:nth-child(3) { display: none; }.cash-hero, .expense-summary { padding: 22px; }.cash-hero svg { display: none; }.expense-summary { align-items: flex-end; }.expense-summary strong { font-size: 28px; }
   .counter-layout { display: block; }.counter-menu { grid-template-columns: repeat(2, 1fr); }.basket { position: static; margin-top: 18px; }.counter-menu button { min-height: 125px; }.form-row { grid-template-columns: 1fr; gap: 0; }
 }
+
+/* iOS keeps the home-indicator inset outside the floating navigation. */
+@supports (-webkit-touch-callout: none) {
+  @media (max-width: 760px) {
+    .app-shell { padding-bottom: calc(86px + env(safe-area-inset-bottom)); }
+    .bottom-nav {
+      left: 12px;
+      right: 12px;
+      bottom: calc(env(safe-area-inset-bottom) + 8px);
+      min-height: 60px;
+      padding-bottom: 0;
+      overflow: hidden;
+      border: 1px solid rgba(222,158,51,.34);
+      border-radius: 17px;
+      box-shadow: 0 12px 34px rgba(24,8,5,.32);
+    }
+  }
+}
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; transition: none !important; } }
