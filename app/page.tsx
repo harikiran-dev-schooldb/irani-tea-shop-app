@@ -2,6 +2,7 @@
 
 import { FormEvent, ReactNode, useEffect, useState } from "react";
 import { BarChart3, BookOpen, Check, ChevronRight, CircleDollarSign, Cloud, Coffee, Download, IndianRupee, LayoutDashboard, Plus, ReceiptIndianRupee, Search, Settings, ShoppingBag, Store, TrendingDown, TrendingUp, WalletCards, WifiOff, X } from "lucide-react";
+import Image from "next/image";
 
 import type { MenuItem, Order, ShopData, Transaction } from "@/lib/shop-data";
 
@@ -103,7 +104,7 @@ export default function Home() {
   return (
     <div className="app-shell">
       <aside className="sidebar">
-        <div className="shop-brand"><span className="brand-cup"><Coffee size={22}/></span><div><strong>Irani Tea</strong><small>Shop manager</small></div></div>
+        <div className="shop-brand"><span className="brand-cup"><Image src="/icon.svg" width={48} height={48} alt="Irani Tea logo" priority/></span><div><strong>Irani Tea</strong><small>Shop manager</small></div></div>
         <nav className="side-nav" aria-label="App navigation">
           {nav.map(({ id, label, icon: Icon }) => <button key={id} className={view === id ? "active" : ""} onClick={() => setView(id)}><Icon size={19}/><span>{label}</span>{id === "orders" && activeOrders.length > 0 ? <b>{activeOrders.length}</b> : null}</button>)}
         </nav>
@@ -113,8 +114,8 @@ export default function Home() {
 
       <main className="workspace">
         <header className="topbar">
-          <div><p>{todayLabel}</p><h1>{nav.find((item) => item.id === view)?.label}</h1></div>
-          <div className="top-actions"><span className={`sync-state ${syncState}`}>{syncState === "synced" ? <Cloud size={15}/> : <WifiOff size={15}/>}<span>{syncState === "synced" ? "Neon synced" : syncState === "offline" ? "Offline" : "Local cache"}</span></span>{installPrompt ? <button className="install-button" onClick={installApp}><Download size={17}/> Install app</button> : null}<button className="search-button" aria-label="Search"><Search size={19}/></button><button className="quick-order" onClick={() => setModal("order")}><Plus size={18}/> New order</button><span className="avatar">IT</span></div>
+          <div className="topbar-title"><Image className="mobile-logo" src="/icon.svg" width={42} height={42} alt=""/><div><p>{todayLabel}</p><h1>{nav.find((item) => item.id === view)?.label}</h1></div></div>
+          <div className="top-actions"><span className={`sync-state ${syncState}`}>{syncState === "synced" ? <Cloud size={15}/> : <WifiOff size={15}/>}<span>{syncState === "synced" ? "Neon synced" : syncState === "offline" ? "Offline" : "Local cache"}</span></span>{installPrompt ? <button className="install-button" onClick={installApp}><Download size={17}/> Install app</button> : null}<button className="search-button" aria-label="Search"><Search size={19}/></button><button className="quick-order" onClick={() => setModal("order")}><Plus size={18}/> New order</button><span className="avatar"><Image src="/icon.svg" width={40} height={40} alt=""/></span></div>
         </header>
 
         {error ? <div className="error-banner"><span>{error}</span><button onClick={loadData}>Try again</button></div> : null}
@@ -135,7 +136,7 @@ export default function Home() {
 
 function Dashboard({ data, sales, expenses, balance, setView, open }: { data: ShopData; sales: number; expenses: number; balance: number; setView: (view: View) => void; open: (kind: "sale" | "expense" | "order") => void }) {
   const cards = [
-    { label: "Total sales", value: sales, detail: `${data.orders.length} orders recorded`, icon: TrendingUp, tone: "green" },
+    { label: "Total sales", value: sales, detail: `${data.orders.length} orders recorded`, icon: TrendingUp, tone: "coffee" },
     { label: "Expenses", value: expenses, detail: `${data.transactions.filter((item) => item.type === "expense").length} entries`, icon: TrendingDown, tone: "red" },
     { label: "Cash balance", value: balance, detail: "Sales minus expenses", icon: IndianRupee, tone: "gold" },
     { label: "Menu items", value: data.menu.length, detail: `${data.menu.filter((item) => item.isAvailable).length} available`, icon: Coffee, tone: "blue", plain: true },
@@ -145,7 +146,7 @@ function Dashboard({ data, sales, expenses, balance, setView, open }: { data: Sh
     <div className="metric-grid">{cards.map(({ label, value, detail, icon: Icon, tone, plain }) => <article className="metric" key={label}><div className={`metric-icon ${tone}`}><Icon size={20}/></div><span>{label}</span><strong>{plain ? value : money(value)}</strong><small>{detail}</small></article>)}</div>
     <section className="dashboard-grid">
       <div className="panel"><div className="panel-head"><div><span>Recent orders</span><h3>Kitchen queue</h3></div><button onClick={() => setView("orders")}>View all <ChevronRight size={16}/></button></div><div className="order-list">{data.orders.length ? data.orders.slice(0, 5).map((order) => <OrderRow order={order} key={order.id}/>) : <Empty icon={<ShoppingBag/>} title="No orders yet" text="Create the first order when a customer arrives."/>}</div></div>
-      <div className="panel quick-panel"><div className="panel-head"><div><span>Quick actions</span><h3>Keep things moving</h3></div></div><button onClick={() => open("order")}><span className="quick-icon green"><ShoppingBag/></span><div><strong>New counter order</strong><small>Record an order and sale</small></div><ChevronRight/></button><button onClick={() => open("expense")}><span className="quick-icon red"><ReceiptIndianRupee/></span><div><strong>Add an expense</strong><small>Stock, rent or supplies</small></div><ChevronRight/></button><button onClick={() => open("sale")}><span className="quick-icon gold"><CircleDollarSign/></span><div><strong>Record cash sale</strong><small>Add income without an order</small></div><ChevronRight/></button></div>
+      <div className="panel quick-panel"><div className="panel-head"><div><span>Quick actions</span><h3>Keep things moving</h3></div></div><button onClick={() => open("order")}><span className="quick-icon coffee"><ShoppingBag/></span><div><strong>New counter order</strong><small>Record an order and sale</small></div><ChevronRight/></button><button onClick={() => open("expense")}><span className="quick-icon red"><ReceiptIndianRupee/></span><div><strong>Add an expense</strong><small>Stock, rent or supplies</small></div><ChevronRight/></button><button onClick={() => open("sale")}><span className="quick-icon gold"><CircleDollarSign/></span><div><strong>Record cash sale</strong><small>Add income without an order</small></div><ChevronRight/></button></div>
     </section>
   </div>;
 }

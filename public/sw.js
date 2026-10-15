@@ -1,4 +1,4 @@
-const CACHE = "irani-tea-shell-v1";
+const CACHE = "irani-tea-shell-v2";
 const SHELL = ["/", "/manifest.webmanifest", "/icon.svg", "/icons/icon-192.png", "/icons/icon-512.png", "/irani-tea-banner.png"];
 
 self.addEventListener("install", (event) => {
