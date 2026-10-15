@@ -127,6 +127,7 @@ footer { padding: 30px 5vw; display: flex; align-items: center; justify-content:
 .footer-brand { color: white; }
 
 .drawer-backdrop { position: fixed; inset: 0; z-index: 39; background: rgba(20,24,19,.48); backdrop-filter: blur(3px); }
+.drawer-backdrop { width: 100%; border: 0; cursor: default; }
 .cart-drawer { position: fixed; right: 0; top: 0; z-index: 40; width: min(480px, 100%); height: 100%; background: var(--paper); padding: 28px; display: flex; flex-direction: column; transform: translateX(105%); transition: transform .32s ease; box-shadow: var(--shadow); overflow-y: auto; }
 .cart-drawer.open { transform: translateX(0); }
 .drawer-head { display: flex; align-items: flex-start; justify-content: space-between; border-bottom: 1px solid var(--line); padding-bottom: 22px; }
@@ -150,8 +151,8 @@ footer { padding: 30px 5vw; display: flex; align-items: center; justify-content:
 .checkout-button { width: 100%; margin-top: 12px; }
 .checkout-note { text-align: center; color: var(--muted); font-size: 11px; }
 
-.customize-dialog { width: min(540px, calc(100% - 30px)); border: 0; padding: 30px; background: var(--paper); color: var(--ink); box-shadow: var(--shadow); }
-.customize-dialog::backdrop { background: rgba(20,24,19,.58); backdrop-filter: blur(4px); }
+.modal-shell { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 15px; overflow-y: auto; background: rgba(20,24,19,.58); backdrop-filter: blur(4px); }
+.customize-dialog { position: relative; width: min(540px, 100%); max-height: calc(100vh - 30px); overflow-y: auto; border: 0; padding: 30px; background: var(--paper); color: var(--ink); box-shadow: var(--shadow); }
 .dialog-close { position: absolute; right: 18px; top: 18px; z-index: 2; }
 .dialog-visual { height: 150px; display: grid; place-items: center; font-size: 90px; background: var(--cream); margin: -30px -30px 27px; }
 .dialog-description { color: var(--muted); line-height: 1.6; }
