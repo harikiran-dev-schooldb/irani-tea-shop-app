@@ -286,6 +286,8 @@ export default function Home() {
     .reduce((sum, item) => sum + item.amount, 0);
   const balance = cashSales - expenses;
   const overallNet = sales - expenses;
+  const showsReportDate =
+    view === "orders" || view === "cashflow";
   const activeOrders = data.orders.filter(
     (order) => order.status !== "completed",
   );
@@ -380,26 +382,28 @@ export default function Home() {
               <h1>{nav.find((item) => item.id === view)?.label}</h1>
             </div>
           </div>
-          <label className="header-date-filter">
-            <CalendarDays size={17} />
-            <span>Report date</span>
-            <input
-              type="date"
-              aria-label="Filter all reports by date"
-              value={selectedDate}
-              onChange={(event) => setSelectedDate(event.target.value)}
-            />
-            {selectedDate ? (
-              <button
-                type="button"
-                aria-label="Clear report date"
-                title="Show all dates"
-                onClick={() => setSelectedDate("")}
-              >
-                <X size={15} />
-              </button>
-            ) : null}
-          </label>
+          {showsReportDate ? (
+            <label className="header-date-filter">
+              <CalendarDays size={17} />
+              <span>Report date</span>
+              <input
+                type="date"
+                aria-label="Filter all reports by date"
+                value={selectedDate}
+                onChange={(event) => setSelectedDate(event.target.value)}
+              />
+              {selectedDate ? (
+                <button
+                  type="button"
+                  aria-label="Show all recorded dates"
+                  title="Show all recorded dates"
+                  onClick={() => setSelectedDate("")}
+                >
+                  <X size={15} />
+                </button>
+              ) : null}
+            </label>
+          ) : null}
           <div className="top-actions">
             <span className={`sync-state ${syncState}`}>
               {syncState === "synced" ? (
@@ -461,6 +465,7 @@ export default function Home() {
             balance={balance}
             overallNet={overallNet}
             reportDate={selectedDate}
+            setReportDate={setSelectedDate}
             setView={setView}
             open={setModal}
           />
@@ -468,6 +473,8 @@ export default function Home() {
         {!loading && view === "orders" ? (
           <Orders
             orders={scopedOrders}
+            reportDate={selectedDate}
+            setReportDate={setSelectedDate}
             post={post}
             open={() => setModal("order")}
           />
@@ -497,6 +504,8 @@ export default function Home() {
               (item) => item.type === "expense",
             )}
             total={expenses}
+            reportDate={selectedDate}
+            setReportDate={setSelectedDate}
             open={() => setModal("expense")}
           />
         ) : null}
@@ -522,6 +531,7 @@ function Dashboard({
   balance,
   overallNet,
   reportDate,
+  setReportDate,
   setView,
   open,
 }: {
@@ -531,6 +541,7 @@ function Dashboard({
   balance: number;
   overallNet: number;
   reportDate: string;
+  setReportDate: (value: string) => void;
   setView: (view: View) => void;
   open: (kind: "sale" | "expense" | "order") => void;
 }) {
@@ -592,6 +603,7 @@ function Dashboard({
           <span>Fresh since 2024</span>
         </div>
       </section>
+      <ReportDateFilter value={reportDate} onChange={setReportDate} />
       <div className="metric-grid">
         {cards.map(
           ({ label, value, detail, icon: Icon, tone, plain, wide }) => (
@@ -679,15 +691,20 @@ function Dashboard({
 
 function Orders({
   orders,
+  reportDate,
+  setReportDate,
   post,
   open,
 }: {
   orders: Order[];
+  reportDate: string;
+  setReportDate: (value: string) => void;
   post: (payload: Record<string, unknown>) => Promise<void>;
   open: () => void;
 }) {
   return (
     <div className="page-content">
+      <ReportDateFilter value={reportDate} onChange={setReportDate} />
       <div className="page-tools">
         <div>
           <p>Track every cup and snack from counter to collection.</p>
@@ -1024,10 +1041,14 @@ function Cashflow({
 function Expenses({
   transactions,
   total,
+  reportDate,
+  setReportDate,
   open,
 }: {
   transactions: Transaction[];
   total: number;
+  reportDate: string;
+  setReportDate: (value: string) => void;
   open: () => void;
 }) {
   return (
@@ -1042,6 +1063,7 @@ function Expenses({
           <Plus size={18} /> Add expense
         </button>
       </section>
+      <ReportDateFilter value={reportDate} onChange={setReportDate} />
       <div className="expense-grid">
         {transactions.length ? (
           transactions.map((item) => (
@@ -1085,6 +1107,16 @@ function Counter({
   const [basket, setBasket] = useState<MenuItem[]>([]);
   const [paymentMode, setPaymentMode] = useState<"cash" | "online">("cash");
   const total = basket.reduce((sum, item) => sum + item.price, 0);
+  const itemCount = (id: string) =>
+    basket.filter((basketItem) => basketItem.id === id).length;
+  const basketLines = Array.from(
+    new Map(basket.map((item) => [item.id, item])).values(),
+  ).map((item) => ({ ...item, quantity: itemCount(item.id) }));
+  const removeOne = (id: string) => {
+    const index = basket.findLastIndex((item) => item.id === id);
+    if (index < 0) return;
+    setBasket((items) => items.filter((_, itemIndex) => itemIndex !== index));
+  };
   async function finish() {
     if (!total) return;
     await post({
@@ -1109,32 +1141,67 @@ function Counter({
           <span>{menu.length} available</span>
         </div>
         <div className="counter-menu">
-          {menu.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => setBasket((items) => [...items, item])}
-            >
-              <Coffee />
-              <span>{item.name}</span>
-              <strong>{money(item.price)}</strong>
-            </button>
-          ))}
+          {menu.map((item) => {
+            const quantity = itemCount(item.id);
+            return (
+              <button
+                className={quantity ? "selected" : ""}
+                key={item.id}
+                onClick={() => setBasket((items) => [...items, item])}
+              >
+                <span className="counter-item-top">
+                  <span className="counter-item-icon">
+                    <Coffee />
+                  </span>
+                  <small>{item.category}</small>
+                  {quantity ? <b>{quantity}</b> : null}
+                </span>
+                <span className="counter-item-name">{item.name}</span>
+                <span className="counter-item-foot">
+                  <strong>{money(item.price)}</strong>
+                  <em>Add +</em>
+                </span>
+              </button>
+            );
+          })}
         </div>
       </section>
       <aside className="basket">
         <div className="panel-head">
           <div>
             <span>Current order</span>
-            <h3>{basket.length} items</h3>
+            <h3>
+              {basket.length} item{basket.length === 1 ? "" : "s"}
+            </h3>
           </div>
           <button onClick={() => setBasket([])}>Clear</button>
         </div>
         <div className="basket-items">
           {basket.length ? (
-            basket.map((item, index) => (
-              <div key={`${item.id}-${index}`}>
-                <span>{item.name}</span>
-                <strong>{money(item.price)}</strong>
+            basketLines.map((item) => (
+              <div className="basket-line" key={item.id}>
+                <div className="basket-line-copy">
+                  <strong>{item.name}</strong>
+                  <small>{money(item.price)} each</small>
+                </div>
+                <div className="quantity-stepper" aria-label={`${item.name} quantity`}>
+                  <button
+                    type="button"
+                    aria-label={`Remove one ${item.name}`}
+                    onClick={() => removeOne(item.id)}
+                  >
+                    −
+                  </button>
+                  <b>{item.quantity}</b>
+                  <button
+                    type="button"
+                    aria-label={`Add one ${item.name}`}
+                    onClick={() => setBasket((items) => [...items, item])}
+                  >
+                    +
+                  </button>
+                </div>
+                <strong>{money(item.price * item.quantity)}</strong>
               </div>
             ))
           ) : (
@@ -1187,6 +1254,36 @@ function OrderRow({ order }: { order: Order }) {
       </div>
       <strong>{money(order.total)}</strong>
       <span className={`status-dot ${order.status}`}>{order.status}</span>
+    </div>
+  );
+}
+
+function ReportDateFilter({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <div className="report-toolbar page-date-filter">
+      <label>
+        <CalendarDays size={18} />
+        <span>Report date</span>
+        <input
+          type="date"
+          aria-label="Filter this report by date"
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+        />
+      </label>
+      {value ? (
+        <button className="text-button" onClick={() => onChange("")}>
+          Show all dates
+        </button>
+      ) : (
+        <span>Showing all recorded dates</span>
+      )}
     </div>
   );
 }
