@@ -141,7 +141,7 @@ export default function Home() {
         {!loading && view === "storefront" ? <Counter menu={data.menu.filter((item) => item.isAvailable)} post={post}/> : null}
       </main>
 
-      <nav className="bottom-nav" aria-label="Mobile navigation">{nav.slice(0, 5).map(({ id, label, icon: Icon }) => <button key={id} className={view === id ? "active" : ""} onClick={() => setView(id)}><Icon size={20}/><span>{label}</span></button>)}</nav>
+      <nav className="bottom-nav" aria-label="Mobile navigation">{nav.map(({ id, label, icon: Icon }) => <button key={id} aria-label={label} className={view === id ? "active" : ""} onClick={() => setView(id)}><Icon size={20}/><span>{id === "cashflow" ? "Sales" : label}</span></button>)}</nav>
       {modal ? <EntryModal kind={modal} close={() => setModal(null)} post={post}/> : null}
     </div>
   );
