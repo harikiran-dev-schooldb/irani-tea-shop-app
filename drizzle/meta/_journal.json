@@ -22,6 +22,13 @@
       "when": 1792077535281,
       "tag": "0002_bouncy_bloodaxe",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1792083365134,
+      "tag": "0003_marvelous_black_tarantula",
+      "breakpoints": true
     }
   ]
 }

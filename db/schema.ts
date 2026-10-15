@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import {
   boolean,
+  date,
   index,
   integer,
   pgEnum,
@@ -8,6 +9,7 @@ import {
   pgTable,
   text,
   timestamp,
+  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
 
@@ -29,6 +31,8 @@ export const menuItems = pgTable(
     category: text("category").notNull(),
     price: integer("price").notNull(),
     isAvailable: boolean("is_available").notNull().default(true),
+    stockQty: integer("stock_qty").notNull().default(50),
+    lowStockThreshold: integer("low_stock_threshold").notNull().default(10),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -55,6 +59,23 @@ export const orders = pgTable(
   (table) => [index("orders_created_at_idx").on(table.createdAt)],
 );
 
+export const orderItems = pgTable(
+  "order_items",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orderId: uuid("order_id")
+      .notNull()
+      .references(() => orders.id, { onDelete: "cascade" }),
+    menuItemId: uuid("menu_item_id").references(() => menuItems.id, {
+      onDelete: "set null",
+    }),
+    name: text("name").notNull(),
+    quantity: integer("quantity").notNull(),
+    unitPrice: integer("unit_price").notNull(),
+  },
+  (table) => [index("order_items_order_id_idx").on(table.orderId)],
+);
+
 export const transactions = pgTable(
   "transactions",
   {
@@ -75,5 +96,23 @@ export const transactions = pgTable(
     index("transactions_created_at_idx").on(table.createdAt),
     index("transactions_type_idx").on(table.type),
     index("transactions_payment_mode_idx").on(table.paymentMode),
+  ],
+);
+
+export const dailyClosings = pgTable(
+  "daily_closings",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    businessDate: date("business_date").notNull(),
+    openingCash: integer("opening_cash").notNull().default(0),
+    expectedCash: integer("expected_cash").notNull(),
+    actualCash: integer("actual_cash").notNull(),
+    difference: integer("difference").notNull(),
+    closedAt: timestamp("closed_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("daily_closings_business_date_idx").on(table.businessDate),
   ],
 );
