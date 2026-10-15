@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, ReactNode, useEffect, useState } from "react";
-import { Banknote, BarChart3, BookOpen, CalendarDays, Check, ChevronRight, CircleDollarSign, Cloud, Coffee, Download, IndianRupee, LayoutDashboard, Plus, ReceiptIndianRupee, Search, Settings, ShoppingBag, Smartphone, Store, TrendingDown, TrendingUp, WalletCards, WifiOff, X } from "lucide-react";
+import { Banknote, BarChart3, BookOpen, CalendarDays, Check, ChevronRight, CircleDollarSign, Cloud, Coffee, Download, IndianRupee, LayoutDashboard, Menu, Plus, ReceiptIndianRupee, Search, Settings, ShoppingBag, Smartphone, Store, TrendingDown, TrendingUp, WalletCards, WifiOff, X } from "lucide-react";
 import Image from "next/image";
 
 import type { MenuItem, Order, ShopData, Transaction } from "@/lib/shop-data";
@@ -52,6 +52,7 @@ export default function Home() {
   const [error, setError] = useState("");
   const [modal, setModal] = useState<"menu" | "sale" | "expense" | "order" | null>(null);
   const [query, setQuery] = useState("");
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [syncState, setSyncState] = useState<"synced" | "local" | "offline">("synced");
   const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(null);
 
@@ -116,10 +117,11 @@ export default function Home() {
 
   return (
     <div className="app-shell">
-      <aside className="sidebar">
+      {mobileNavOpen ? <button className="sidebar-backdrop" aria-label="Close navigation" onClick={() => setMobileNavOpen(false)}/> : null}
+      <aside className={`sidebar${mobileNavOpen ? " mobile-open" : ""}`}>
         <div className="shop-brand"><span className="brand-cup"><Image src="/icon.svg" width={48} height={48} alt="Irani Tea logo" priority/></span><div><strong>Irani Tea</strong><small>Shop manager</small></div></div>
         <nav className="side-nav" aria-label="App navigation">
-          {nav.map(({ id, label, icon: Icon }) => <button key={id} className={view === id ? "active" : ""} onClick={() => setView(id)}><Icon size={19}/><span>{label}</span>{id === "orders" && activeOrders.length > 0 ? <b>{activeOrders.length}</b> : null}</button>)}
+          {nav.map(({ id, label, icon: Icon }) => <button key={id} className={view === id ? "active" : ""} onClick={() => { setView(id); setMobileNavOpen(false); }}><Icon size={19}/><span>{label}</span>{id === "orders" && activeOrders.length > 0 ? <b>{activeOrders.length}</b> : null}</button>)}
         </nav>
         <div className="shop-status"><span/><div><strong>Shop is open</strong><small>7:00 AM – 11:00 PM</small></div></div>
         <button className="settings-row"><Settings size={18}/> Settings</button>
@@ -127,7 +129,7 @@ export default function Home() {
 
       <main className="workspace">
         <header className="topbar">
-          <div className="topbar-title"><Image className="mobile-logo" src="/icon.svg" width={42} height={42} alt=""/><div><p>{todayLabel}</p><h1>{nav.find((item) => item.id === view)?.label}</h1></div></div>
+          <div className="topbar-title"><button className="mobile-menu" aria-label="Open main navigation" onClick={() => setMobileNavOpen(true)}><Menu size={20}/></button><Image className="mobile-logo" src="/icon.svg" width={42} height={42} alt=""/><div><p>{todayLabel}</p><h1>{nav.find((item) => item.id === view)?.label}</h1></div></div>
           <div className="top-actions"><span className={`sync-state ${syncState}`}>{syncState === "synced" ? <Cloud size={15}/> : <WifiOff size={15}/>}<span>{syncState === "synced" ? "Neon synced" : syncState === "offline" ? "Offline" : "Local cache"}</span></span>{installPrompt ? <button className="install-button" onClick={installApp}><Download size={17}/> Install app</button> : null}<button className="search-button" aria-label="Search"><Search size={19}/></button><button className="quick-order" onClick={() => setModal("order")}><Plus size={18}/> New order</button><span className="avatar"><Image src="/icon.svg" width={40} height={40} alt=""/></span></div>
         </header>
 
@@ -141,7 +143,6 @@ export default function Home() {
         {!loading && view === "storefront" ? <Counter menu={data.menu.filter((item) => item.isAvailable)} post={post}/> : null}
       </main>
 
-      <nav className="bottom-nav" aria-label="Mobile navigation">{nav.map(({ id, label, icon: Icon }) => <button key={id} aria-label={label} className={view === id ? "active" : ""} onClick={() => setView(id)}><Icon size={20}/><span>{id === "cashflow" ? "Sales" : label}</span></button>)}</nav>
       {modal ? <EntryModal kind={modal} close={() => setModal(null)} post={post}/> : null}
     </div>
   );
