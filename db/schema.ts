@@ -30,9 +30,11 @@ export const transactions = pgTable("transactions", {
   category: text("category").notNull(),
   amount: integer("amount").notNull(),
   note: text("note").notNull().default(""),
+  paymentMode: text("payment_mode").notNull().default("cash"),
   orderId: uuid("order_id").references(() => orders.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [
   index("transactions_created_at_idx").on(table.createdAt),
   index("transactions_type_idx").on(table.type),
+  index("transactions_payment_mode_idx").on(table.paymentMode),
 ]);

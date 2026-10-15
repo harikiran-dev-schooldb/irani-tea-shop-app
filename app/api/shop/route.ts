@@ -17,6 +17,19 @@ function cleanText(value: unknown, fallback = "") {
   return String(value ?? fallback).trim();
 }
 
+function paymentMode(value: unknown) {
+  return value === "online" ? "online" : "cash";
+}
+
+function transactionDate(value: unknown) {
+  const date = cleanText(value);
+  if (!date) return undefined;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error("Choose a valid date.");
+  const parsed = new Date(`${date}T12:00:00.000Z`);
+  if (Number.isNaN(parsed.getTime())) throw new Error("Choose a valid date.");
+  return parsed;
+}
+
 async function readShop() {
   const db = getDb();
   let menu = await db.select().from(menuItems).orderBy(menuItems.category, menuItems.name);
@@ -66,19 +79,23 @@ export async function POST(request: Request) {
         category: cleanText(payload.category, type === "sale" ? "Counter sale" : "Other"),
         amount: positiveNumber(payload.amount, "Amount"),
         note: cleanText(payload.note),
+        paymentMode: type === "sale" ? paymentMode(payload.paymentMode) : "cash",
+        createdAt: transactionDate(payload.date),
       });
     } else if (kind === "order") {
       const total = positiveNumber(payload.total, "Total");
       const itemCount = positiveNumber(payload.itemCount, "Item count");
       const customer = cleanText(payload.customer, "Walk-in") || "Walk-in";
+      const paidBy = paymentMode(payload.paymentMode);
+      const createdAt = transactionDate(payload.date) ?? new Date();
       await db.execute(sql`
         WITH new_order AS (
-          INSERT INTO ${orders} (order_no, customer, item_count, total)
-          VALUES (nextval('order_number_seq'), ${customer}, ${itemCount}, ${total})
+          INSERT INTO ${orders} (order_no, customer, item_count, total, created_at)
+          VALUES (nextval('order_number_seq'), ${customer}, ${itemCount}, ${total}, ${createdAt})
           RETURNING id, order_no, total
         )
-        INSERT INTO ${transactions} (type, category, amount, note, order_id)
-        SELECT 'sale', 'Orders', total, 'Order #' || order_no, id FROM new_order
+        INSERT INTO ${transactions} (type, category, amount, note, payment_mode, order_id, created_at)
+        SELECT 'sale', 'Orders', total, 'Order #' || order_no, ${paidBy}, id, ${createdAt} FROM new_order
       `);
     } else if (kind === "order-status") {
       const status = cleanText(payload.status);

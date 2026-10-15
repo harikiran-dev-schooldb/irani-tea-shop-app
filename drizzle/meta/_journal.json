@@ -15,6 +15,13 @@
       "when": 1792074315365,
       "tag": "0001_natural_firebrand",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792077535281,
+      "tag": "0002_bouncy_bloodaxe",
+      "breakpoints": true
     }
   ]
 }
