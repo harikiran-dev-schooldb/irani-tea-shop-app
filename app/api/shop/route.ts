@@ -21,11 +21,22 @@ function paymentMode(value: unknown) {
   return value === "online" ? "online" : "cash";
 }
 
-function transactionDate(value: unknown) {
+function currentIndiaTime() {
+  return new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Asia/Kolkata",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).format(new Date());
+}
+
+function transactionDate(value: unknown, timeValue?: unknown) {
   const date = cleanText(value);
   if (!date) return undefined;
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error("Choose a valid date.");
-  const parsed = new Date(`${date}T12:00:00.000Z`);
+  const time = cleanText(timeValue, currentIndiaTime());
+  if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(time)) throw new Error("Choose a valid time.");
+  const parsed = new Date(`${date}T${time}:00+05:30`);
   if (Number.isNaN(parsed.getTime())) throw new Error("Choose a valid date.");
   return parsed;
 }
@@ -80,14 +91,14 @@ export async function POST(request: Request) {
         amount: positiveNumber(payload.amount, "Amount"),
         note: cleanText(payload.note),
         paymentMode: type === "sale" ? paymentMode(payload.paymentMode) : "cash",
-        createdAt: transactionDate(payload.date),
+        createdAt: transactionDate(payload.date, payload.time),
       });
     } else if (kind === "order") {
       const total = positiveNumber(payload.total, "Total");
       const itemCount = positiveNumber(payload.itemCount, "Item count");
       const customer = cleanText(payload.customer, "Walk-in") || "Walk-in";
       const paidBy = paymentMode(payload.paymentMode);
-      const createdAt = transactionDate(payload.date) ?? new Date();
+      const createdAt = transactionDate(payload.date, payload.time) ?? new Date();
       await db.execute(sql`
         WITH new_order AS (
           INSERT INTO ${orders} (order_no, customer, item_count, total, created_at)
