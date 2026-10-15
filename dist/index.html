@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f2eadb">
+  <meta name="description" content="Freshly brewed chai and snacks, ready for pickup.">
+  <title>Chai Corner — Freshly brewed, right around the corner</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="#top" aria-label="Chai Corner home">
+      <span class="brand-mark" aria-hidden="true">च</span>
+      <span>Chai Corner</span>
+    </a>
+    <nav aria-label="Main navigation">
+      <a href="#menu">Menu</a>
+      <a href="#story">Our story</a>
+      <button class="cart-button" type="button" data-open-cart aria-label="Open cart">
+        Bag <span class="cart-count" data-cart-count>0</span>
+      </button>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero-copy">
+        <p class="eyebrow">Brewed fresh · Served warm</p>
+        <h1 id="hero-title">Your daily pause,<br><em>poured perfectly.</em></h1>
+        <p class="hero-intro">Small-batch chai, fragrant spices, and crisp snacks made for slow sips and quick catch-ups.</p>
+        <div class="hero-actions">
+          <a class="primary-button" href="#menu">Order your chai <span aria-hidden="true">↗</span></a>
+          <span class="open-note"><i></i> Open today · 7:00 AM–9:00 PM</span>
+        </div>
+      </div>
+      <div class="hero-art" aria-label="Illustration of hot masala chai">
+        <div class="sun-seal">SINCE<br><strong>2024</strong></div>
+        <div class="steam steam-one"></div>
+        <div class="steam steam-two"></div>
+        <div class="cup">
+          <div class="tea-surface"></div>
+          <div class="cup-label">chai<br><small>corner</small></div>
+          <div class="handle"></div>
+        </div>
+        <div class="saucer"></div>
+        <div class="spice spice-one">✦</div>
+        <div class="spice spice-two">✦</div>
+        <div class="leaf leaf-one"></div>
+        <div class="leaf leaf-two"></div>
+      </div>
+    </section>
+
+    <section class="ticker" aria-label="Shop highlights">
+      <span>Whole spices</span><b>✦</b><span>Fresh milk</span><b>✦</b><span>Brewed to order</span><b>✦</b><span>Quick pickup</span>
+    </section>
+
+    <section class="menu-section" id="menu" aria-labelledby="menu-title">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">What are you in the mood for?</p>
+          <h2 id="menu-title">The tea table</h2>
+        </div>
+        <div class="filters" role="group" aria-label="Filter menu">
+          <button class="filter active" type="button" data-filter="all">All</button>
+          <button class="filter" type="button" data-filter="chai">Chai</button>
+          <button class="filter" type="button" data-filter="coolers">Coolers</button>
+          <button class="filter" type="button" data-filter="bites">Bites</button>
+        </div>
+      </div>
+      <div class="menu-grid" data-menu-grid></div>
+    </section>
+
+    <section class="ritual" id="story" aria-labelledby="ritual-title">
+      <div class="ritual-visual" aria-hidden="true">
+        <div class="arch arch-back"></div>
+        <div class="arch arch-front">
+          <span class="kettle">♨</span>
+          <span class="pour"></span>
+          <span class="mini-cup">च</span>
+        </div>
+      </div>
+      <div class="ritual-copy">
+        <p class="eyebrow">The everyday ritual</p>
+        <h2 id="ritual-title">Good chai can’t be rushed.</h2>
+        <p>We crush our spices in small batches, simmer every pot until the flavours settle in, and pour only when it is just right.</p>
+        <div class="steps">
+          <div><strong>01</strong><span>Choose your favourite</span></div>
+          <div><strong>02</strong><span>We brew it fresh</span></div>
+          <div><strong>03</strong><span>Pick up &amp; enjoy</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="visit" aria-labelledby="visit-title">
+      <div>
+        <p class="eyebrow">Come say hello</p>
+        <h2 id="visit-title">There’s always<br>a cup waiting.</h2>
+      </div>
+      <div class="visit-details">
+        <div><span>Find us</span><strong>12 Market Road<br>Your City</strong></div>
+        <div><span>Opening hours</span><strong>Mon–Sun<br>7:00 AM–9:00 PM</strong></div>
+        <a href="tel:+919000000000">+91 90000 00000 <span aria-hidden="true">↗</span></a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <a class="brand footer-brand" href="#top"><span class="brand-mark">च</span><span>Chai Corner</span></a>
+    <p>Fresh chai. Familiar feeling.</p>
+    <p>© <span data-year></span> Chai Corner</p>
+  </footer>
+
+  <div class="drawer-backdrop" data-backdrop hidden></div>
+  <aside class="cart-drawer" data-cart aria-labelledby="cart-title" aria-hidden="true">
+    <div class="drawer-head">
+      <div><p class="eyebrow">Your order</p><h2 id="cart-title">The chai bag</h2></div>
+      <button class="icon-button" type="button" data-close-cart aria-label="Close cart">×</button>
+    </div>
+    <div class="cart-items" data-cart-items></div>
+    <div class="empty-cart" data-empty-cart>
+      <span>च</span>
+      <h3>Your bag is empty</h3>
+      <p>Add something warm and wonderful.</p>
+      <button class="text-button" type="button" data-close-cart>Browse the menu</button>
+    </div>
+    <form class="checkout" data-checkout hidden>
+      <div class="total-line"><span>Total</span><strong data-total>₹0</strong></div>
+      <label>Name<input name="name" required autocomplete="name" placeholder="Your name"></label>
+      <label>Phone<input name="phone" required inputmode="tel" autocomplete="tel" placeholder="Mobile number"></label>
+      <label>Pickup time
+        <select name="time" required>
+          <option value="">Choose a time</option>
+          <option>As soon as possible</option>
+          <option>In 30 minutes</option>
+          <option>In 1 hour</option>
+        </select>
+      </label>
+      <button class="primary-button checkout-button" type="submit">Place pickup order <span aria-hidden="true">→</span></button>
+      <p class="checkout-note">Pay at the counter when you collect your order.</p>
+    </form>
+  </aside>
+
+  <dialog class="customize-dialog" data-dialog>
+    <button class="icon-button dialog-close" type="button" data-close-dialog aria-label="Close">×</button>
+    <div class="dialog-visual" data-dialog-visual></div>
+    <p class="eyebrow">Make it yours</p>
+    <h2 data-dialog-title>Masala Chai</h2>
+    <p class="dialog-description" data-dialog-description></p>
+    <form data-customize-form>
+      <fieldset>
+        <legend>Size</legend>
+        <label><input type="radio" name="size" value="Regular" checked><span>Regular</span></label>
+        <label><input type="radio" name="size" value="Large"><span>Large <small>+₹20</small></span></label>
+      </fieldset>
+      <fieldset>
+        <legend>Sweetness</legend>
+        <label><input type="radio" name="sweetness" value="No sugar"><span>No sugar</span></label>
+        <label><input type="radio" name="sweetness" value="Less sweet"><span>Less sweet</span></label>
+        <label><input type="radio" name="sweetness" value="Regular" checked><span>Regular</span></label>
+      </fieldset>
+      <button class="primary-button add-button" type="submit">Add to bag <span data-dialog-price>₹45</span></button>
+    </form>
+  </dialog>
+
+  <div class="toast" role="status" aria-live="polite" data-toast></div>
+  <script src="app.js"></script>
+</body>
+</html>
