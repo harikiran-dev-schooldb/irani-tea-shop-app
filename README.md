@@ -25,3 +25,33 @@ The menu seeds itself with the standard Irani Tea items the first time the empty
 ## PWA behavior
 
 The app includes an install manifest, maskable 192px and 512px icons, iOS web-app metadata, safe-area-aware mobile navigation, and a service worker. The application shell and most recently loaded shop data remain readable offline; writes are intentionally disabled offline to avoid conflicting financial records.
+
+## Native Android app
+
+The `android` directory contains a native Kotlin and Jetpack Compose client. It uses the same architecture as the SchoolDB Android client: Compose screens, ViewModel state, direct REST API calls, and a device-side read cache. It is not a WebView or Capacitor wrapper.
+
+Open `android` in Android Studio, run `adb reverse tcp:5173 tcp:5173`, and start the `app` configuration. Debug builds connect to `http://127.0.0.1:5173/` through that ADB port forward.
+
+Override the server for a physical device or another deployment with:
+
+```bash
+cd android
+./gradlew assembleDebug -PIRANI_TEA_API_BASE_URL=http://192.168.1.10:5173/
+```
+
+Release builds default to the current Irani Tea Sites URL. That Site must allow the Android client to reach `/api/shop`, or `IRANI_TEA_API_BASE_URL` should point to a separately hosted public/authenticated API.
+
+## Play Store release
+
+The `play-store` directory contains the listing copy, proposed Data safety answers, release checklist, 512px icon, 1024×500 feature graphic, and five Android phone screenshots. The public privacy policy route is `/privacy`.
+
+For signed local release builds, create an upload key and an ignored `android/keystore.properties` file with:
+
+```properties
+storeFile=app/upload-key.jks
+storePassword=YOUR_STORE_PASSWORD
+keyAlias=upload
+keyPassword=YOUR_KEY_PASSWORD
+```
+
+Then run `cd android && ./gradlew testDebugUnitTest lintRelease bundleRelease`. For the GitHub release workflow, configure `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, and `ANDROID_KEY_PASSWORD` as repository secrets.
