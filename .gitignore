@@ -29,6 +29,7 @@
 /android/local.properties
 /android/**/build/
 /android/keystore.properties
+/android/.version-code
 /android/app/*.jks
 /android/app/*.keystore
 *.iml
