@@ -15,8 +15,8 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.clerk.api.Clerk
 import com.clerk.api.session.Session
-import com.clerk.ui.auth.AuthView
 import kotlinx.coroutines.launch
+import com.iraniteashop.mobile.auth.IraniTeaSignInScreen
 import com.iraniteashop.mobile.ui.IraniTeaApp
 import com.iraniteashop.mobile.ui.theme.IraniTeaTheme
 
@@ -41,7 +41,7 @@ class MainActivity : ComponentActivity() {
                             val scope = rememberCoroutineScope()
                             IraniTeaApp(onSignOut = { scope.launch { Clerk.auth.signOut() } })
                         }
-                        else -> AuthView()
+                        else -> IraniTeaSignInScreen()
                     }
                 }
             }

@@ -15,6 +15,17 @@ val apiBaseUrlOverride = providers.gradleProperty("IRANI_TEA_API_BASE_URL")
 fun apiBaseUrl(defaultUrl: String): String =
     (apiBaseUrlOverride ?: defaultUrl).trimEnd('/') + "/"
 
+val schoolDbAuthBaseUrl = providers.gradleProperty("SCHOOLDB_AUTH_BASE_URL")
+    .orElse(providers.environmentVariable("SCHOOLDB_AUTH_BASE_URL"))
+    .orElse("https://www.schooldb.co.in/")
+    .get()
+    .trimEnd('/') + "/"
+val schoolDbTenantCode = providers.gradleProperty("IRANI_TEA_SCHOOL_CODE")
+    .orElse(providers.environmentVariable("IRANI_TEA_SCHOOL_CODE"))
+    .orElse("kotak")
+    .get()
+    .trim()
+
 val productionApiBaseUrl = "https://chai-corner-ordering.buzzycoot64.chatgpt.site/"
 val rootEnvironment = Properties()
 val rootEnvironmentFile = rootProject.file("../.env.local")
@@ -55,6 +66,8 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "CLERK_PUBLISHABLE_KEY", "\"$clerkPublishableKey\"")
+        buildConfigField("String", "SCHOOLDB_AUTH_BASE_URL", "\"$schoolDbAuthBaseUrl\"")
+        buildConfigField("String", "SCHOOLDB_TENANT_CODE", "\"$schoolDbTenantCode\"")
     }
 
     if (keystorePropertiesFile.exists()) {
@@ -125,7 +138,6 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.11.0")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.11.0")
     implementation("com.clerk:clerk-android-api:1.2.1")
-    implementation("com.clerk:clerk-android-ui:1.2.1")
 
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
