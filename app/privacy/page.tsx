@@ -89,8 +89,12 @@ export default function PrivacyPolicyPage() {
           <h2>Your choices and contact</h2>
           <p>
             Shop staff can correct or delete supported records inside the app. For access, deletion,
-            or privacy questions, contact the developer using the support email shown on the Irani
-            Tea Shop Manager Google Play listing or through the developer profile below.
+            or privacy questions, contact the developer at{
+            " "}
+            <a href="mailto:harikiran.dev.schooldb@gmail.com">
+              harikiran.dev.schooldb@gmail.com
+            </a>
+            .
           </p>
           <p>
             <a href="https://github.com/harikiran-dev-schooldb">Developer profile</a>

@@ -40,7 +40,7 @@ This app is designed for authorised shop staff. An Irani Tea Shop Manager accoun
 - Target audience: 18 and over
 - Content rating: Complete the IARC questionnaire as a business/productivity app
 - Privacy policy path: `/privacy` on the final publicly accessible production origin
-- Support email: **REQUIRED — enter the developer support email in Play Console**
+- Support email: `harikiran.dev.schooldb@gmail.com`
 
 ## Assets
 

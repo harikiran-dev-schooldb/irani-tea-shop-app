@@ -18,10 +18,9 @@
 ## Required before production submission
 
 1. Make the production API reachable by Android and protect it with real staff authentication. The current Sites deployment is owner-private, so a release build cannot call `/api/shop`.
-2. Add the final support email to the Play Console listing and privacy policy.
-3. Create or provide the Android upload keystore, store it securely, and configure the four GitHub Actions secrets documented in `README.md`.
-4. Build the signed `.aab` and upload it to Play Console Internal testing.
-5. In Play Console, complete App access with reviewer credentials, Data safety, Ads, Target audience, Content rating, and privacy-policy URL.
-6. For a new personal developer account created after 13 November 2023, complete a closed test with at least 12 opted-in testers for 14 continuous days before applying for production access.
+2. Create or provide the Android upload keystore, store it securely, and configure the four GitHub Actions secrets documented in `README.md`.
+3. Build the signed `.aab` and upload it to Play Console Internal testing.
+4. In Play Console, complete App access with reviewer credentials, Data safety, Ads, Target audience, Content rating, and privacy-policy URL.
+5. For a new personal developer account created after 13 November 2023, complete a closed test with at least 12 opted-in testers for 14 continuous days before applying for production access.
 
 Do not publish a release that embeds a shared secret or bypass token in the Android package.
