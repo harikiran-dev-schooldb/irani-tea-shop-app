@@ -616,8 +616,6 @@ function ShopManager() {
         {!loading && view === "orders" ? (
           <Orders
             orders={scopedOrders}
-            reportDate={selectedDate}
-            setReportDate={setSelectedDate}
             post={post}
             open={() => setModal("order")}
             edit={setEditTarget}
@@ -995,16 +993,12 @@ function Insights({ data }: { data: ShopData }) {
 
 function Orders({
   orders,
-  reportDate,
-  setReportDate,
   post,
   open,
   edit,
   remove,
 }: {
   orders: Order[];
-  reportDate: string;
-  setReportDate: (value: string) => void;
   post: (payload: Record<string, unknown>) => Promise<ShopData>;
   open: () => void;
   edit: (target: EditTarget) => void;
@@ -1012,7 +1006,6 @@ function Orders({
 }) {
   return (
     <div className="page-content">
-      <ReportDateFilter value={reportDate} onChange={setReportDate} />
       <div className="page-tools">
         <div>
           <p>Track every cup and snack from counter to collection.</p>
@@ -1241,24 +1234,6 @@ function Cashflow({
           </small>
         </div>
         <BarChart3 size={54} />
-      </div>
-      <div className="report-toolbar">
-        <label>
-          <CalendarDays size={18} />
-          <span>Report date</span>
-          <input
-            type="date"
-            value={selectedDate}
-            onChange={(event) => setSelectedDate(event.target.value)}
-          />
-        </label>
-        {selectedDate ? (
-          <button className="text-button" onClick={() => setSelectedDate("")}>
-            Show all dates
-          </button>
-        ) : (
-          <span>Showing all recorded dates</span>
-        )}
       </div>
       <div className="payment-summary">
         <article>
