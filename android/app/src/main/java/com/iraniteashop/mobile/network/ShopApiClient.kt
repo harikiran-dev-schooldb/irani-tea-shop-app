@@ -1,5 +1,10 @@
 package com.iraniteashop.mobile.network
 
+import com.clerk.api.Clerk
+import com.clerk.api.network.serialization.errorMessage
+import com.clerk.api.network.serialization.onFailure
+import com.clerk.api.network.serialization.onSuccess
+
 import com.iraniteashop.mobile.BuildConfig
 import com.iraniteashop.mobile.model.CartLine
 import com.iraniteashop.mobile.model.ShopData
@@ -97,12 +102,14 @@ class ShopApiClient(
         request("POST", payload.toString()).let { ShopJson.parse(it) to it }
     }
 
-    private fun request(method: String, body: String?): String {
+    private suspend fun request(method: String, body: String?): String {
+        val token = sessionToken()
         val connection = (URL(baseUrl + "api/shop").openConnection() as HttpURLConnection).apply {
             requestMethod = method
             connectTimeout = 15_000
             readTimeout = 20_000
             setRequestProperty("Accept", "application/json")
+            setRequestProperty("Authorization", "Bearer $token")
             if (body != null) {
                 doOutput = true
                 setRequestProperty("Content-Type", "application/json; charset=utf-8")
@@ -122,5 +129,16 @@ class ShopApiClient(
         } finally {
             connection.disconnect()
         }
+    }
+
+    private suspend fun sessionToken(): String {
+        var token: String? = null
+        var failure: String? = null
+        Clerk.auth
+            .getToken()
+            .onSuccess { token = it }
+            .onFailure { failure = it.errorMessage }
+        return token?.takeIf(String::isNotBlank)
+            ?: throw IllegalStateException(failure ?: "Your session expired. Please sign in again.")
     }
 }

@@ -26,6 +26,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Coffee
 import androidx.compose.material.icons.filled.Payments
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.outlined.Assessment
 import androidx.compose.material.icons.outlined.Dashboard
@@ -96,7 +97,10 @@ private enum class Section(val label: String, val icon: ImageVector) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun IraniTeaApp(viewModel: ShopViewModel = viewModel()) {
+fun IraniTeaApp(
+    viewModel: ShopViewModel = viewModel(),
+    onSignOut: () -> Unit = {},
+) {
     val state by viewModel.state
     var section by remember { mutableStateOf(Section.Dashboard) }
 
@@ -127,6 +131,9 @@ fun IraniTeaApp(viewModel: ShopViewModel = viewModel()) {
                 actions = {
                     IconButton(onClick = viewModel::refresh, enabled = !state.loading) {
                         Icon(Icons.Default.Refresh, contentDescription = "Refresh")
+                    }
+                    IconButton(onClick = onSignOut, enabled = !state.saving) {
+                        Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = "Sign out")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(

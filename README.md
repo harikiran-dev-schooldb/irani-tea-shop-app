@@ -41,6 +41,8 @@ cd android
 
 Release builds default to the current Irani Tea Sites URL. That Site must allow the Android client to reach `/api/shop`, or `IRANI_TEA_API_BASE_URL` should point to a separately hosted public/authenticated API.
 
+Android authentication uses Clerk's native SDK. Set `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` and `CLERK_SECRET_KEY` in the ignored root `.env.local`; only the publishable key is compiled into Android. The API verifies every Clerk session token and permits emails listed in `SHOP_ADMIN_EMAILS`. Never put `CLERK_SECRET_KEY` in Android configuration.
+
 ## Play Store release
 
 The `play-store` directory contains the listing copy, proposed Data safety answers, release checklist, 512px icon, 1024×500 feature graphic, and five Android phone screenshots. The public privacy policy route is `/privacy`.
@@ -54,4 +56,4 @@ keyAlias=upload
 keyPassword=YOUR_KEY_PASSWORD
 ```
 
-Then run `cd android && ./gradlew testDebugUnitTest lintRelease bundleRelease`. For the GitHub release workflow, configure `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, and `ANDROID_KEY_PASSWORD` as repository secrets.
+Then run `cd android && ./gradlew testDebugUnitTest lintRelease bundleRelease`. For the GitHub release workflow, configure `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`, and `CLERK_PUBLISHABLE_KEY` as repository secrets.

@@ -10,6 +10,7 @@ import {
   transactions,
 } from "@/db/schema";
 import { starterMenu } from "@/lib/shop-data";
+import { authorizeShopRequest } from "@/lib/shop-auth";
 
 export const dynamic = "force-dynamic";
 
@@ -79,7 +80,9 @@ async function readShop() {
   };
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+  const authorization = await authorizeShopRequest(request);
+  if (authorization instanceof NextResponse) return authorization;
   try {
     return NextResponse.json(await readShop());
   } catch (error) {
@@ -89,6 +92,8 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const authorization = await authorizeShopRequest(request);
+  if (authorization instanceof NextResponse) return authorization;
   try {
     const payload = await request.json() as Record<string, unknown>;
     const kind = cleanText(payload.kind);

@@ -16,6 +16,21 @@ fun apiBaseUrl(defaultUrl: String): String =
     (apiBaseUrlOverride ?: defaultUrl).trimEnd('/') + "/"
 
 val productionApiBaseUrl = "https://chai-corner-ordering.buzzycoot64.chatgpt.site/"
+val rootEnvironment = Properties()
+val rootEnvironmentFile = rootProject.file("../.env.local")
+if (rootEnvironmentFile.exists()) {
+    rootEnvironment.load(FileInputStream(rootEnvironmentFile))
+}
+val clerkPublishableKey = rootEnvironment
+    .getProperty("NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY", "")
+    .trim()
+    .ifEmpty {
+        providers.gradleProperty("CLERK_PUBLISHABLE_KEY")
+            .orElse(providers.environmentVariable("NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY"))
+            .orElse("")
+            .get()
+            .trim()
+    }
 val versionCodeOverride = providers.gradleProperty("VERSION_CODE")
     .orElse(providers.environmentVariable("VERSION_CODE"))
     .orNull
@@ -39,12 +54,13 @@ android {
         versionName = "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        buildConfigField("String", "CLERK_PUBLISHABLE_KEY", "\"$clerkPublishableKey\"")
     }
 
     if (keystorePropertiesFile.exists()) {
         signingConfigs {
             create("release") {
-                storeFile = file(keystoreProperties.getProperty("storeFile"))
+                storeFile = rootProject.file(keystoreProperties.getProperty("storeFile"))
                 storePassword = keystoreProperties.getProperty("storePassword")
                 keyAlias = keystoreProperties.getProperty("keyAlias")
                 keyPassword = keystoreProperties.getProperty("keyPassword")
@@ -108,6 +124,8 @@ dependencies {
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.11.0")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.11.0")
+    implementation("com.clerk:clerk-android-api:1.2.1")
+    implementation("com.clerk:clerk-android-ui:1.2.1")
 
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
