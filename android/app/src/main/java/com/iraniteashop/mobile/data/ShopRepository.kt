@@ -4,6 +4,7 @@ import android.content.Context
 import com.iraniteashop.mobile.model.CartLine
 import com.iraniteashop.mobile.model.Order
 import com.iraniteashop.mobile.model.ShopData
+import com.iraniteashop.mobile.model.Transaction
 import com.iraniteashop.mobile.network.ShopApiClient
 import com.iraniteashop.mobile.network.ShopApiException
 
@@ -30,11 +31,41 @@ class ShopRepository(context: Context) {
     suspend fun createOrder(customer: String, paymentMode: String, lines: List<CartLine>) =
         api.createOrder(customer, paymentMode, lines).also { cache(it.second) }.first
 
-    suspend fun addExpense(category: String, amount: Int, note: String) =
-        api.addExpense(category, amount, note).also { cache(it.second) }.first
+    suspend fun addExpense(category: String, amount: Int, note: String, date: String, time: String) =
+        api.addExpense(category, amount, note, date, time).also { cache(it.second) }.first
 
-    suspend fun addSale(category: String, amount: Int, paymentMode: String, note: String) =
-        api.addSale(category, amount, paymentMode, note).also { cache(it.second) }.first
+    suspend fun addSale(
+        category: String,
+        amount: Int,
+        paymentMode: String,
+        note: String,
+        date: String,
+        time: String,
+    ) = api.addSale(category, amount, paymentMode, note, date, time).also { cache(it.second) }.first
+
+    suspend fun updateTransaction(
+        transaction: Transaction,
+        category: String,
+        amount: Int,
+        paymentMode: String,
+        note: String,
+        date: String,
+        time: String,
+    ) = api.updateTransaction(transaction, category, amount, paymentMode, note, date, time)
+        .also { cache(it.second) }
+        .first
+
+    suspend fun deleteTransaction(id: String) =
+        api.deleteTransaction(id).also { cache(it.second) }.first
+
+    suspend fun closeDay(
+        businessDate: String,
+        openingCash: Int,
+        expectedCash: Int,
+        actualCash: Int,
+    ) = api.closeDay(businessDate, openingCash, expectedCash, actualCash)
+        .also { cache(it.second) }
+        .first
 
     suspend fun updateOrderStatus(id: String, status: String) =
         api.updateOrderStatus(id, status).also { cache(it.second) }.first

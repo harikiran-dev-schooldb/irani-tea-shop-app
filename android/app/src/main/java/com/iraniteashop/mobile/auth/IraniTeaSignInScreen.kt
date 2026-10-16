@@ -124,7 +124,7 @@ private fun ColumnScope.PhoneStep(
     viewModel: IraniTeaSignInViewModel,
     clearFocus: () -> Unit,
 ) {
-    Heading("Welcome back", "Enter the registered mobile number used in your Support app.")
+    Heading("Welcome back", "Enter the registered mobile number for your Irani Tea account.")
     OutlinedTextField(
         value = state.phone,
         onValueChange = viewModel::updatePhone,
@@ -192,7 +192,7 @@ private fun ColumnScope.CodeStep(
 
 @Composable
 private fun ColumnScope.AccountStep(state: SignInUiState, viewModel: IraniTeaSignInViewModel) {
-    Heading("Choose an account", "Select the SchoolDB account to use for Irani Tea.")
+    Heading("Choose an account", "Select the authorised account to use for Irani Tea.")
     state.accounts.forEach { account ->
         Card(
             modifier = Modifier

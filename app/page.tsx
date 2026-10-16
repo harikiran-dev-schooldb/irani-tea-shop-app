@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, ReactNode, useCallback, useEffect, useState } from "react";
-import { useAuth, useClerk } from "@clerk/nextjs";
+import { useAuth, useClerk, useUser } from "@clerk/nextjs";
 import {
   Banknote,
   BarChart3,
@@ -242,6 +242,7 @@ export default function Home() {
 function ShopManager() {
   const { getToken } = useAuth();
   const { signOut } = useClerk();
+  const { user } = useUser();
   const [view, setView] = useState<View>("dashboard");
   const [data, setData] = useState<ShopData>(starterData);
   const [loading, setLoading] = useState(true);
@@ -262,6 +263,12 @@ function ShopManager() {
     null,
   );
   const [signingOut, setSigningOut] = useState(false);
+  const ownerName =
+    user?.fullName || user?.primaryEmailAddress?.emailAddress || "Shop staff";
+  const ownerRole =
+    typeof user?.publicMetadata.role === "string"
+      ? user.publicMetadata.role.replaceAll("_", " ").toLowerCase()
+      : "Authorised staff";
 
   const loadData = useCallback(async () => {
     try {
@@ -472,7 +479,7 @@ function ShopManager() {
         <div className="shop-status">
           <span />
           <div>
-            <strong>Shop is open</strong>
+            <strong>Shop hours</strong>
             <small>04:30 AM – 11:00 AM</small>
             <small>03:00 PM – 08:00 PM</small>
           </div>
@@ -490,8 +497,8 @@ function ShopManager() {
             <UserRound size={17} />
           </span>
           <div>
-            <strong>A Sridevi</strong>
-            <small>Shop owner</small>
+            <strong>{ownerName}</strong>
+            <small>{ownerRole}</small>
           </div>
         </div>
       </aside>
@@ -1268,7 +1275,7 @@ function Cashflow({
             <Smartphone />
           </span>
           <div>
-            <small>Online sales</small>
+            <small>UPI / Online sales</small>
             <strong>{money(onlineTotal)}</strong>
           </div>
         </article>
@@ -1341,7 +1348,7 @@ function Cashflow({
                     Cash <b>{money(report.cash)}</b>
                   </span>
                   <span>
-                    Online <b>{money(report.online)}</b>
+                    UPI / Online <b>{money(report.online)}</b>
                   </span>
                   <strong>{money(report.cash + report.online)}</strong>
                 </div>
@@ -1357,7 +1364,7 @@ function Cashflow({
             <Empty
               icon={<BarChart3 />}
               title="No sales yet"
-              text="Add a cash or online sale to start your daily reports."
+              text="Add a cash or UPI / online sale to start your daily reports."
             />
           )}
         </section>
@@ -1384,7 +1391,7 @@ function Cashflow({
                       <span
                         className={`payment-badge ${item.paymentMode === "online" ? "online" : "cash"}`}
                       >
-                        {item.paymentMode === "online" ? "Online" : "Cash"}
+                        {item.paymentMode === "online" ? "UPI / Online" : "Cash"}
                       </span>
                     ) : null}
                   </small>

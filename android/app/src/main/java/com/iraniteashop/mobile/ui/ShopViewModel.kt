@@ -87,9 +87,18 @@ class ShopViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun addExpense(category: String, amount: Int, note: String, onComplete: () -> Unit) {
-        if (amount <= 0) return
-        mutate("Expense saved", onComplete) { repository.addExpense(category, amount, note) }
+    fun addExpense(
+        category: String,
+        amount: Int,
+        note: String,
+        date: String,
+        time: String,
+        onComplete: () -> Unit,
+    ) {
+        if (amount <= 0 || note.isBlank()) return
+        mutate("Expense saved", onComplete) {
+            repository.addExpense(category, amount, note, date, time)
+        }
     }
 
     fun addSale(
@@ -97,11 +106,50 @@ class ShopViewModel(application: Application) : AndroidViewModel(application) {
         amount: Int,
         paymentMode: String,
         note: String,
+        date: String,
+        time: String,
         onComplete: () -> Unit,
     ) {
         if (amount <= 0) return
         mutate("Sale saved", onComplete) {
-            repository.addSale(category, amount, paymentMode, note)
+            repository.addSale(category, amount, paymentMode, note, date, time)
+        }
+    }
+
+    fun updateTransaction(
+        transaction: com.iraniteashop.mobile.model.Transaction,
+        category: String,
+        amount: Int,
+        paymentMode: String,
+        note: String,
+        date: String,
+        time: String,
+        onComplete: () -> Unit,
+    ) {
+        if (amount <= 0 || (transaction.type == "expense" && note.isBlank())) return
+        mutate("Transaction updated", onComplete) {
+            repository.updateTransaction(transaction, category, amount, paymentMode, note, date, time)
+        }
+    }
+
+    fun deleteTransaction(
+        transaction: com.iraniteashop.mobile.model.Transaction,
+        onComplete: () -> Unit,
+    ) {
+        mutate("Transaction deleted", onComplete) {
+            repository.deleteTransaction(transaction.id)
+        }
+    }
+
+    fun closeDay(
+        businessDate: String,
+        openingCash: Int,
+        expectedCash: Int,
+        actualCash: Int,
+        onComplete: () -> Unit,
+    ) {
+        mutate("Daily closing saved", onComplete) {
+            repository.closeDay(businessDate, openingCash, expectedCash, actualCash)
         }
     }
 

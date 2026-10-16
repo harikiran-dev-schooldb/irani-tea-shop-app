@@ -1,8 +1,13 @@
 package com.iraniteashop.mobile.ui
 
+import android.app.DatePickerDialog
+import android.app.TimePickerDialog
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,6 +18,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -70,6 +76,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -77,6 +84,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.iraniteashop.mobile.model.CartLine
+import com.iraniteashop.mobile.model.DailyClosing
 import com.iraniteashop.mobile.model.MenuItem
 import com.iraniteashop.mobile.model.Order
 import com.iraniteashop.mobile.model.ShopData
@@ -85,6 +93,7 @@ import com.iraniteashop.mobile.ui.theme.Saffron
 import java.text.NumberFormat
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -186,6 +195,9 @@ fun IraniTeaApp(
                         saving = state.saving,
                         onExpense = viewModel::addExpense,
                         onSale = viewModel::addSale,
+                        onUpdate = viewModel::updateTransaction,
+                        onDelete = viewModel::deleteTransaction,
+                        onCloseDay = viewModel::closeDay,
                     )
                 }
             }
@@ -684,16 +696,26 @@ private fun MenuScreen(menu: List<MenuItem>, saving: Boolean, onToggle: (MenuIte
 private fun ReportsScreen(
     data: ShopData,
     saving: Boolean,
-    onExpense: (String, Int, String, () -> Unit) -> Unit,
-    onSale: (String, Int, String, String, () -> Unit) -> Unit,
+    onExpense: (String, Int, String, String, String, () -> Unit) -> Unit,
+    onSale: (String, Int, String, String, String, String, () -> Unit) -> Unit,
+    onUpdate: (Transaction, String, Int, String, String, String, String, () -> Unit) -> Unit,
+    onDelete: (Transaction, () -> Unit) -> Unit,
+    onCloseDay: (String, Int, Int, Int, () -> Unit) -> Unit,
 ) {
     var expenseOpen by remember { mutableStateOf(false) }
     var saleOpen by remember { mutableStateOf(false) }
-    val today = data.transactions.filter { isToday(it.createdAt) }
-    val sales = today.filter { it.type == "sale" }.sumOf { it.amount }
-    val cashSales = today.filter { it.type == "sale" && it.paymentMode != "online" }.sumOf { it.amount }
-    val upiSales = today.filter { it.type == "sale" && it.paymentMode == "online" }.sumOf { it.amount }
-    val expenses = today.filter { it.type == "expense" }.sumOf { it.amount }
+    var editing by remember { mutableStateOf<Transaction?>(null) }
+    var deleting by remember { mutableStateOf<Transaction?>(null) }
+    var selectedDate by remember { mutableStateOf(todayIndia()) }
+    val selectedTransactions = data.transactions.filter { transactionDate(it.createdAt) == selectedDate }
+    val sales = selectedTransactions.filter { it.type == "sale" }.sumOf { it.amount }
+    val cashSales = selectedTransactions.filter { it.type == "sale" && it.paymentMode != "online" }.sumOf { it.amount }
+    val upiSales = selectedTransactions.filter { it.type == "sale" && it.paymentMode == "online" }.sumOf { it.amount }
+    val expenses = selectedTransactions.filter { it.type == "expense" }.sumOf { it.amount }
+    val dailyTransactions = data.transactions
+        .groupBy { transactionDate(it.createdAt) }
+        .filterKeys { it.isNotBlank() }
+        .toSortedMap(compareByDescending { it })
 
     LazyColumn(
         contentPadding = PaddingValues(16.dp),
@@ -703,8 +725,9 @@ private fun ReportsScreen(
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Column {
                     Text("Sales & expenses", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                    Text("Today’s cashflow", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("Daily cashflow", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
+                DateButton(selectedDate, onDate = { selectedDate = it })
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(onClick = { saleOpen = true }, modifier = Modifier.weight(1f)) {
                         Icon(Icons.Default.Add, contentDescription = null)
@@ -720,7 +743,7 @@ private fun ReportsScreen(
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 MetricCard("Cash", money(cashSales), Icons.Default.Payments, Modifier.weight(1f))
-                MetricCard("UPI", money(upiSales), Icons.Outlined.Assessment, Modifier.weight(1f))
+                MetricCard("UPI / Online", money(upiSales), Icons.Outlined.Assessment, Modifier.weight(1f))
             }
         }
         item {
@@ -729,17 +752,49 @@ private fun ReportsScreen(
                 MetricCard("Expenses", money(expenses), Icons.AutoMirrored.Filled.ReceiptLong, Modifier.weight(1f))
             }
         }
-        item { SectionTitle("Recent transactions") }
-        if (data.transactions.isEmpty()) item { EmptyCard("No sales or expenses recorded yet.") }
-        items(data.transactions.take(100), key = { it.id }) { transaction -> TransactionRow(transaction) }
+        item {
+            DailyClosingCard(
+                date = selectedDate,
+                entries = selectedTransactions,
+                closing = data.closings.firstOrNull { it.businessDate == selectedDate },
+                saving = saving,
+                onSave = { opening, expected, actual ->
+                    onCloseDay(selectedDate, opening, expected, actual) {}
+                },
+            )
+        }
+        item { SectionTitle("Transactions for ${displayDate(selectedDate)}") }
+        if (selectedTransactions.isEmpty()) item { EmptyCard("No sales or expenses recorded for this date.") }
+        items(selectedTransactions, key = { "tx-${it.id}" }) { transaction ->
+            TransactionRow(transaction, onEdit = { editing = it }, onDelete = { deleting = it })
+        }
+        item { SectionTitle("Daily collections") }
+        if (dailyTransactions.isEmpty()) item { EmptyCard("Daily cash and UPI totals will appear here.") }
+        items(dailyTransactions.entries.take(14).toList(), key = { "day-${it.key}" }) { (date, entries) ->
+            val cash = entries.filter { it.type == "sale" && it.paymentMode != "online" }.sumOf { it.amount }
+            val upi = entries.filter { it.type == "sale" && it.paymentMode == "online" }.sumOf { it.amount }
+            Card(Modifier.fillMaxWidth().clickable { selectedDate = date }) {
+                Row(Modifier.fillMaxWidth().padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text(displayDate(date), fontWeight = FontWeight.Bold)
+                        Text("Cash ${money(cash)} · UPI / Online ${money(upi)}", style = MaterialTheme.typography.bodySmall)
+                    }
+                    Text(money(cash + upi), fontWeight = FontWeight.ExtraBold)
+                }
+            }
+        }
     }
 
     if (expenseOpen) {
         ExpenseDialog(
             saving = saving,
             onDismiss = { if (!saving) expenseOpen = false },
-            onConfirm = { category, amount, note ->
-                onExpense(category, amount, note) { expenseOpen = false }
+            initialDate = selectedDate,
+            onConfirm = { category, amount, note, date, time ->
+                onExpense(category, amount, note, date, time) {
+                    selectedDate = date
+                    expenseOpen = false
+                }
             },
         )
     }
@@ -748,27 +803,58 @@ private fun ReportsScreen(
         SaleDialog(
             saving = saving,
             onDismiss = { if (!saving) saleOpen = false },
-            onConfirm = { category, amount, paymentMode, note ->
-                onSale(category, amount, paymentMode, note) { saleOpen = false }
+            initialDate = selectedDate,
+            onConfirm = { category, amount, paymentMode, note, date, time ->
+                onSale(category, amount, paymentMode, note, date, time) {
+                    selectedDate = date
+                    saleOpen = false
+                }
             },
+        )
+    }
+
+    editing?.let { transaction ->
+        EditTransactionDialog(
+            transaction = transaction,
+            saving = saving,
+            onDismiss = { if (!saving) editing = null },
+            onConfirm = { category, amount, paymentMode, note, date, time ->
+                onUpdate(transaction, category, amount, paymentMode, note, date, time) {
+                    selectedDate = date
+                    editing = null
+                }
+            },
+        )
+    }
+
+    deleting?.let { transaction ->
+        AlertDialog(
+            onDismissRequest = { if (!saving) deleting = null },
+            title = { Text("Delete transaction?") },
+            text = { Text("This removes ${transaction.category} (${money(transaction.amount)}) from the shop records.") },
+            confirmButton = {
+                Button(onClick = { onDelete(transaction) { deleting = null } }, enabled = !saving) { Text("Delete") }
+            },
+            dismissButton = { TextButton(onClick = { deleting = null }, enabled = !saving) { Text("Cancel") } },
         )
     }
 }
 
 @Composable
-private fun TransactionRow(transaction: Transaction) {
+private fun TransactionRow(transaction: Transaction, onEdit: (Transaction) -> Unit, onDelete: (Transaction) -> Unit) {
     Card {
         Row(Modifier.fillMaxWidth().padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text(transaction.category, fontWeight = FontWeight.Bold)
                 val paymentLabel = when (transaction.paymentMode) {
-                    "online" -> "UPI"
+                    "online" -> "UPI / Online"
                     else -> "Cash"
                 }
                 Text(
                     listOfNotNull(
                         paymentLabel.takeIf { transaction.type == "sale" },
                         transaction.note.takeIf { it.isNotBlank() },
+                        transactionStamp(transaction.createdAt),
                     ).joinToString(" · "),
                     style = MaterialTheme.typography.bodySmall,
                     maxLines = 1,
@@ -780,6 +866,8 @@ private fun TransactionRow(transaction: Transaction) {
                 color = if (transaction.type == "expense") MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary,
                 fontWeight = FontWeight.ExtraBold,
             )
+            IconButton(onClick = { onEdit(transaction) }) { Icon(Icons.Outlined.Edit, contentDescription = "Edit transaction") }
+            IconButton(onClick = { onDelete(transaction) }) { Icon(Icons.Outlined.DeleteOutline, contentDescription = "Delete transaction") }
         }
     }
 }
@@ -788,18 +876,21 @@ private fun TransactionRow(transaction: Transaction) {
 private fun ExpenseDialog(
     saving: Boolean,
     onDismiss: () -> Unit,
-    onConfirm: (String, Int, String) -> Unit,
+    initialDate: String,
+    onConfirm: (String, Int, String, String, String) -> Unit,
 ) {
     val categories = listOf("Stock", "Milk & tea", "Rent", "Wages", "Gas & electricity", "Other")
     var category by remember { mutableStateOf(categories.first()) }
     var amount by remember { mutableStateOf("") }
     var note by remember { mutableStateOf("") }
+    var date by remember { mutableStateOf(initialDate) }
+    var time by remember { mutableStateOf(nowIndiaTime()) }
     val amountValue = amount.toIntOrNull() ?: 0
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Add expense") },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Column(Modifier.heightIn(max = 520.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text("Expense category", style = MaterialTheme.typography.labelLarge)
                 ChoiceChips(categories, category) { category = it }
                 OutlinedTextField(
@@ -813,14 +904,15 @@ private fun ExpenseDialog(
                     note,
                     { note = it },
                     label = { Text("Note") },
-                    placeholder = { Text("What was this for?") },
+                    placeholder = { Text("Required: what was this for?") },
                 )
+                DateTimeFields(date, time, onDate = { date = it }, onTime = { time = it })
             }
         },
         confirmButton = {
             Button(
-                onClick = { onConfirm(category, amountValue, note) },
-                enabled = amountValue > 0 && !saving,
+                onClick = { onConfirm(category, amountValue, note.trim(), date, time) },
+                enabled = amountValue > 0 && note.isNotBlank() && !saving,
             ) { Text("Save") }
         },
         dismissButton = { TextButton(onClick = onDismiss, enabled = !saving) { Text("Cancel") } },
@@ -831,20 +923,23 @@ private fun ExpenseDialog(
 private fun SaleDialog(
     saving: Boolean,
     onDismiss: () -> Unit,
-    onConfirm: (String, Int, String, String) -> Unit,
+    initialDate: String,
+    onConfirm: (String, Int, String, String, String, String) -> Unit,
 ) {
     val categories = listOf("Counter sale", "Delivery", "Catering", "Other income")
     var category by remember { mutableStateOf(categories.first()) }
     var amount by remember { mutableStateOf("") }
     var paymentMode by remember { mutableStateOf("cash") }
     var note by remember { mutableStateOf("") }
+    var date by remember { mutableStateOf(initialDate) }
+    var time by remember { mutableStateOf(nowIndiaTime()) }
     val amountValue = amount.toIntOrNull() ?: 0
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Record a sale") },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Column(Modifier.heightIn(max = 520.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 OutlinedTextField(
                     amount,
                     { amount = it.filter(Char::isDigit) },
@@ -861,9 +956,9 @@ private fun SaleDialog(
                         OutlinedButton(onClick = { paymentMode = "cash" }, modifier = Modifier.weight(1f)) { Text("Cash") }
                     }
                     if (paymentMode == "online") {
-                        Button(onClick = { paymentMode = "online" }, modifier = Modifier.weight(1f)) { Text("UPI") }
+                        Button(onClick = { paymentMode = "online" }, modifier = Modifier.weight(1f)) { Text("UPI / Online") }
                     } else {
-                        OutlinedButton(onClick = { paymentMode = "online" }, modifier = Modifier.weight(1f)) { Text("UPI") }
+                        OutlinedButton(onClick = { paymentMode = "online" }, modifier = Modifier.weight(1f)) { Text("UPI / Online") }
                     }
                 }
                 Text("Sale type", style = MaterialTheme.typography.labelLarge)
@@ -874,16 +969,179 @@ private fun SaleDialog(
                     label = { Text("Note") },
                     placeholder = { Text("Optional note") },
                 )
+                DateTimeFields(date, time, onDate = { date = it }, onTime = { time = it })
             }
         },
         confirmButton = {
             Button(
-                onClick = { onConfirm(category, amountValue, paymentMode, note) },
+                onClick = { onConfirm(category, amountValue, paymentMode, note.trim(), date, time) },
                 enabled = amountValue > 0 && !saving,
             ) { Text("Save sale") }
         },
         dismissButton = { TextButton(onClick = onDismiss, enabled = !saving) { Text("Cancel") } },
     )
+}
+
+@Composable
+private fun EditTransactionDialog(
+    transaction: Transaction,
+    saving: Boolean,
+    onDismiss: () -> Unit,
+    onConfirm: (String, Int, String, String, String, String) -> Unit,
+) {
+    val categories = if (transaction.type == "expense") {
+        listOf("Stock", "Milk & tea", "Rent", "Wages", "Gas & electricity", "Other")
+    } else {
+        listOf("Counter sale", "Delivery", "Catering", "Other income")
+    }
+    var category by remember(transaction.id) { mutableStateOf(transaction.category) }
+    var amount by remember(transaction.id) { mutableStateOf(transaction.amount.toString()) }
+    var paymentMode by remember(transaction.id) { mutableStateOf(transaction.paymentMode.ifBlank { "cash" }) }
+    var note by remember(transaction.id) { mutableStateOf(transaction.note) }
+    var date by remember(transaction.id) { mutableStateOf(transactionDate(transaction.createdAt).ifBlank { todayIndia() }) }
+    var time by remember(transaction.id) { mutableStateOf(transactionTime(transaction.createdAt)) }
+    val amountValue = amount.toIntOrNull() ?: 0
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Edit ${transaction.type}") },
+        text = {
+            Column(Modifier.heightIn(max = 520.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text("Category", style = MaterialTheme.typography.labelLarge)
+                ChoiceChips(categories, category) { category = it }
+                OutlinedTextField(
+                    amount,
+                    { amount = it.filter(Char::isDigit) },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("Amount") },
+                    prefix = { Text("₹") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    singleLine = true,
+                )
+                if (transaction.type == "sale") {
+                    Text("Payment method", style = MaterialTheme.typography.labelLarge)
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        if (paymentMode == "cash") Button({ paymentMode = "cash" }, Modifier.weight(1f)) { Text("Cash") }
+                        else OutlinedButton({ paymentMode = "cash" }, Modifier.weight(1f)) { Text("Cash") }
+                        if (paymentMode == "online") Button({ paymentMode = "online" }, Modifier.weight(1f)) { Text("UPI / Online") }
+                        else OutlinedButton({ paymentMode = "online" }, Modifier.weight(1f)) { Text("UPI / Online") }
+                    }
+                }
+                OutlinedTextField(
+                    note,
+                    { note = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text(if (transaction.type == "expense") "Note (required)" else "Note") },
+                )
+                DateTimeFields(date, time, onDate = { date = it }, onTime = { time = it })
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = { onConfirm(category, amountValue, paymentMode, note.trim(), date, time) },
+                enabled = amountValue > 0 && (transaction.type != "expense" || note.isNotBlank()) && !saving,
+            ) { Text("Save changes") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss, enabled = !saving) { Text("Cancel") } },
+    )
+}
+
+@Composable
+private fun DateTimeFields(
+    date: String,
+    time: String,
+    onDate: (String) -> Unit,
+    onTime: (String) -> Unit,
+) {
+    Text("Date and time", style = MaterialTheme.typography.labelLarge)
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        DateButton(date, onDate, Modifier.weight(1f))
+        TimeButton(time, onTime, Modifier.weight(1f))
+    }
+}
+
+@Composable
+private fun DateButton(date: String, onDate: (String) -> Unit, modifier: Modifier = Modifier) {
+    val context = LocalContext.current
+    val value = runCatching { LocalDate.parse(date) }.getOrDefault(LocalDate.now(indiaZone))
+    OutlinedButton(
+        onClick = {
+            DatePickerDialog(
+                context,
+                { _, year, month, day -> onDate(String.format(Locale.US, "%04d-%02d-%02d", year, month + 1, day)) },
+                value.year,
+                value.monthValue - 1,
+                value.dayOfMonth,
+            ).show()
+        },
+        modifier = modifier,
+    ) { Text(displayDate(date)) }
+}
+
+@Composable
+private fun TimeButton(time: String, onTime: (String) -> Unit, modifier: Modifier = Modifier) {
+    val context = LocalContext.current
+    val value = runCatching { LocalTime.parse(time, inputTimeFormatter) }.getOrDefault(LocalTime.now(indiaZone))
+    OutlinedButton(
+        onClick = {
+            TimePickerDialog(
+                context,
+                { _, hour, minute -> onTime(String.format(Locale.US, "%02d:%02d", hour, minute)) },
+                value.hour,
+                value.minute,
+                false,
+            ).show()
+        },
+        modifier = modifier,
+    ) { Text(runCatching { value.format(displayTimeFormatter) }.getOrDefault(time)) }
+}
+
+@Composable
+private fun DailyClosingCard(
+    date: String,
+    entries: List<Transaction>,
+    closing: DailyClosing?,
+    saving: Boolean,
+    onSave: (Int, Int, Int) -> Unit,
+) {
+    var opening by remember(date, closing?.closedAt) { mutableStateOf((closing?.openingCash ?: 0).toString()) }
+    var actual by remember(date, closing?.closedAt) { mutableStateOf((closing?.actualCash ?: 0).toString()) }
+    val cashSales = entries.filter { it.type == "sale" && it.paymentMode != "online" }.sumOf { it.amount }
+    val expenses = entries.filter { it.type == "expense" }.sumOf { it.amount }
+    val openingValue = opening.toIntOrNull() ?: 0
+    val expected = openingValue + cashSales - expenses
+    val actualValue = actual.toIntOrNull() ?: 0
+
+    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
+        Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text("Daily closing", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold)
+            Text("Opening cash + cash sales − expenses", style = MaterialTheme.typography.bodySmall)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(
+                    opening,
+                    { opening = it.filter(Char::isDigit) },
+                    modifier = Modifier.weight(1f),
+                    label = { Text("Opening cash") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    singleLine = true,
+                )
+                OutlinedTextField(
+                    actual,
+                    { actual = it.filter(Char::isDigit) },
+                    modifier = Modifier.weight(1f),
+                    label = { Text("Actual cash") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    singleLine = true,
+                )
+            }
+            Text("Expected ${money(expected)} · Difference ${money(actualValue - expected)}")
+            Button(
+                onClick = { onSave(openingValue, expected, actualValue) },
+                enabled = opening.isNotBlank() && actual.isNotBlank() && !saving,
+                modifier = Modifier.fillMaxWidth(),
+            ) { Text(if (closing == null) "Close day" else "Update closing") }
+        }
+    }
 }
 
 @Composable
@@ -922,6 +1180,32 @@ private val moneyFormat = NumberFormat.getCurrencyInstance(Locale.forLanguageTag
 
 private fun money(value: Int): String = moneyFormat.format(value)
 
+private val indiaZone = ZoneId.of("Asia/Kolkata")
+private val displayDateFormatter = DateTimeFormatter.ofPattern("d MMM yyyy")
+private val displayTimestampFormatter = DateTimeFormatter.ofPattern("d MMM · h:mm a")
+private val displayTimeFormatter = DateTimeFormatter.ofPattern("h:mm a")
+private val inputTimeFormatter = DateTimeFormatter.ofPattern("HH:mm")
+
+private fun todayIndia(): String = LocalDate.now(indiaZone).toString()
+
+private fun nowIndiaTime(): String = LocalTime.now(indiaZone).format(inputTimeFormatter)
+
+private fun transactionDate(timestamp: String): String = runCatching {
+    Instant.parse(timestamp).atZone(indiaZone).toLocalDate().toString()
+}.getOrDefault("")
+
+private fun transactionTime(timestamp: String): String = runCatching {
+    Instant.parse(timestamp).atZone(indiaZone).toLocalTime().format(inputTimeFormatter)
+}.getOrDefault(nowIndiaTime())
+
+private fun transactionStamp(timestamp: String): String = runCatching {
+    Instant.parse(timestamp).atZone(indiaZone).format(displayTimestampFormatter)
+}.getOrDefault("Time unavailable")
+
+private fun displayDate(date: String): String = runCatching {
+    LocalDate.parse(date).format(displayDateFormatter)
+}.getOrDefault(date)
+
 private fun isToday(timestamp: String): Boolean = runCatching {
-    Instant.parse(timestamp).atZone(ZoneId.of("Asia/Kolkata")).toLocalDate() == LocalDate.now(ZoneId.of("Asia/Kolkata"))
+    Instant.parse(timestamp).atZone(indiaZone).toLocalDate() == LocalDate.now(indiaZone)
 }.getOrDefault(false)

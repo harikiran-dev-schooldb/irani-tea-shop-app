@@ -7,6 +7,7 @@ import com.clerk.api.network.serialization.onSuccess
 
 import com.iraniteashop.mobile.BuildConfig
 import com.iraniteashop.mobile.model.CartLine
+import com.iraniteashop.mobile.model.Transaction
 import com.iraniteashop.mobile.model.ShopData
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -56,13 +57,21 @@ class ShopApiClient(
         return post(payload)
     }
 
-    suspend fun addExpense(category: String, amount: Int, note: String): Pair<ShopData, String> =
+    suspend fun addExpense(
+        category: String,
+        amount: Int,
+        note: String,
+        date: String,
+        time: String,
+    ): Pair<ShopData, String> =
         post(
             JSONObject()
                 .put("kind", "expense")
                 .put("category", category.ifBlank { "Other" })
                 .put("amount", amount)
-                .put("note", note),
+                .put("note", note)
+                .put("date", date)
+                .put("time", time),
         )
 
     suspend fun addSale(
@@ -70,6 +79,8 @@ class ShopApiClient(
         amount: Int,
         paymentMode: String,
         note: String,
+        date: String,
+        time: String,
     ): Pair<ShopData, String> =
         post(
             JSONObject()
@@ -77,7 +88,49 @@ class ShopApiClient(
                 .put("category", category)
                 .put("amount", amount)
                 .put("paymentMode", paymentMode)
-                .put("note", note),
+                .put("note", note)
+                .put("date", date)
+                .put("time", time),
+        )
+
+    suspend fun updateTransaction(
+        transaction: Transaction,
+        category: String,
+        amount: Int,
+        paymentMode: String,
+        note: String,
+        date: String,
+        time: String,
+    ): Pair<ShopData, String> =
+        post(
+            JSONObject()
+                .put("kind", "transaction-update")
+                .put("id", transaction.id)
+                .put("type", transaction.type)
+                .put("category", category)
+                .put("amount", amount)
+                .put("paymentMode", paymentMode)
+                .put("note", note)
+                .put("date", date)
+                .put("time", time),
+        )
+
+    suspend fun deleteTransaction(id: String): Pair<ShopData, String> =
+        post(JSONObject().put("kind", "transaction-delete").put("id", id))
+
+    suspend fun closeDay(
+        businessDate: String,
+        openingCash: Int,
+        expectedCash: Int,
+        actualCash: Int,
+    ): Pair<ShopData, String> =
+        post(
+            JSONObject()
+                .put("kind", "daily-closing")
+                .put("businessDate", businessDate)
+                .put("openingCash", openingCash)
+                .put("expectedCash", expectedCash)
+                .put("actualCash", actualCash),
         )
 
     suspend fun updateOrderStatus(id: String, status: String): Pair<ShopData, String> =
