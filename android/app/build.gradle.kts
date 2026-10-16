@@ -26,7 +26,7 @@ val schoolDbTenantCode = providers.gradleProperty("IRANI_TEA_SCHOOL_CODE")
     .get()
     .trim()
 
-val productionApiBaseUrl = "https://chai-corner-ordering.buzzycoot64.chatgpt.site/"
+val productionApiBaseUrl = "https://tea.schooldb.co.in/"
 val rootEnvironment = Properties()
 val rootEnvironmentFile = rootProject.file("../.env.local")
 if (rootEnvironmentFile.exists()) {

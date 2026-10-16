@@ -36,6 +36,9 @@ For a deployed API:
 ./gradlew assembleRelease -PIRANI_TEA_API_BASE_URL=https://your-host.example/
 ```
 
+Release builds use `https://tea.schooldb.co.in/` by default. The override above
+is only needed for a different test or production host.
+
 Production builds reject cleartext HTTP traffic. Writes always require a connection; the most recent successful response remains available offline for reading.
 
 ## Signed releases

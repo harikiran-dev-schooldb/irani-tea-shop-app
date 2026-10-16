@@ -44,7 +44,7 @@ cd android
 ./gradlew assembleDebug -PIRANI_TEA_API_BASE_URL=http://192.168.1.10:5173/
 ```
 
-Release builds default to the current Irani Tea Sites URL. That Site must allow the Android client to reach `/api/shop`, or `IRANI_TEA_API_BASE_URL` should point to a separately hosted public/authenticated API.
+Release builds default to `https://tea.schooldb.co.in/`, the same authenticated production API used by the web manager. Override it with `IRANI_TEA_API_BASE_URL` only when testing another deployment.
 
 Android authentication uses Clerk's native SDK. Set `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` and `CLERK_SECRET_KEY` in the ignored root `.env.local`; only the publishable key is compiled into Android. The API verifies every Clerk session token and permits emails listed in `SHOP_ADMIN_EMAILS` or SchoolDB admins from `SHOP_ADMIN_SCHOOL_SLUGS`. Never put `CLERK_SECRET_KEY` in Android configuration.
 
