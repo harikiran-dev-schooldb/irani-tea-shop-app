@@ -12,6 +12,11 @@ Requires Node.js 22.13 or newer.
 4. Apply the schema with `npm run db:migrate`.
 5. Start the app with `npm run dev`.
 
+The web manager uses the same SchoolDB WhatsApp OTP flow as Android. Production
+Clerk keys for `schooldb.co.in` only work on that domain and its subdomains, so
+attach the Vercel deployment to a subdomain such as `tea.schooldb.co.in`. Use
+Clerk development keys in `.env.local` when testing the web login on localhost.
+
 The menu seeds itself with the standard Irani Tea items the first time the empty database is opened.
 
 ## Commands
@@ -41,7 +46,7 @@ cd android
 
 Release builds default to the current Irani Tea Sites URL. That Site must allow the Android client to reach `/api/shop`, or `IRANI_TEA_API_BASE_URL` should point to a separately hosted public/authenticated API.
 
-Android authentication uses Clerk's native SDK. Set `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` and `CLERK_SECRET_KEY` in the ignored root `.env.local`; only the publishable key is compiled into Android. The API verifies every Clerk session token and permits emails listed in `SHOP_ADMIN_EMAILS`. Never put `CLERK_SECRET_KEY` in Android configuration.
+Android authentication uses Clerk's native SDK. Set `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` and `CLERK_SECRET_KEY` in the ignored root `.env.local`; only the publishable key is compiled into Android. The API verifies every Clerk session token and permits emails listed in `SHOP_ADMIN_EMAILS` or SchoolDB admins from `SHOP_ADMIN_SCHOOL_SLUGS`. Never put `CLERK_SECRET_KEY` in Android configuration.
 
 ## Play Store release
 

@@ -1,4 +1,6 @@
 import type { Metadata, Viewport } from "next";
+
+import ClerkAppProvider from "@/components/ClerkAppProvider";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -31,7 +33,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <ClerkAppProvider>{children}</ClerkAppProvider>
+      </body>
     </html>
   );
 }

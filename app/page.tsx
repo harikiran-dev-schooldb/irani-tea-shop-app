@@ -1,6 +1,7 @@
 "use client";
 
-import { FormEvent, ReactNode, useEffect, useState } from "react";
+import { FormEvent, ReactNode, useCallback, useEffect, useState } from "react";
+import { useAuth } from "@clerk/nextjs";
 import {
   Banknote,
   BarChart3,
@@ -36,6 +37,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 
+import WhatsAppAuthGate from "@/components/WhatsAppAuthGate";
 import type {
   DailyClosing,
   MenuItem,
@@ -220,6 +222,15 @@ const normalizeData = (value: ShopData): ShopData => ({
 });
 
 export default function Home() {
+  return (
+    <WhatsAppAuthGate>
+      <ShopManager />
+    </WhatsAppAuthGate>
+  );
+}
+
+function ShopManager() {
+  const { getToken } = useAuth();
   const [view, setView] = useState<View>("dashboard");
   const [data, setData] = useState<ShopData>(starterData);
   const [loading, setLoading] = useState(true);
@@ -240,16 +251,25 @@ export default function Home() {
     null,
   );
 
-  async function loadData() {
+  const loadData = useCallback(async () => {
     try {
-      const response = await fetch("/api/shop", { cache: "no-store" });
-      if (!response.ok) throw new Error("Database unavailable");
+      const token = await getToken();
+      const response = await fetch("/api/shop", {
+        cache: "no-store",
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
+      if (!response.ok) {
+        const result = (await response.json().catch(() => ({}))) as {
+          error?: string;
+        };
+        throw new Error(result.error || "Could not load shop data.");
+      }
       const fresh = normalizeData((await response.json()) as ShopData);
       setData(fresh);
       window.localStorage.setItem(storageKey, JSON.stringify(fresh));
       setSyncState("synced");
       setError("");
-    } catch {
+    } catch (loadError) {
       const saved = window.localStorage.getItem(storageKey);
       setData(
         saved ? normalizeData(JSON.parse(saved) as ShopData) : starterData,
@@ -259,12 +279,14 @@ export default function Home() {
       setError(
         state === "offline"
           ? "You’re offline. Showing the latest saved shop data; editing will resume when the connection returns."
-          : "Neon is not connected. Showing local sample data until DATABASE_URL is configured.",
+          : loadError instanceof Error
+            ? `${loadError.message} Showing the latest saved shop data.`
+            : "Could not load shop data. Showing the latest saved copy.",
       );
     } finally {
       setLoading(false);
     }
-  }
+  }, [getToken]);
 
   useEffect(() => {
     queueMicrotask(() => void loadData());
@@ -284,16 +306,20 @@ export default function Home() {
       window.removeEventListener("offline", onOffline);
       window.removeEventListener("beforeinstallprompt", onInstall);
     };
-  }, []);
+  }, [loadData]);
 
   async function post(payload: Record<string, unknown>) {
     if (!navigator.onLine)
       throw new Error(
         "This entry needs an internet connection to sync with Neon.",
       );
+    const token = await getToken();
     const response = await fetch("/api/shop", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
       body: JSON.stringify(payload),
     });
     const result = (await response.json()) as ShopData & { error?: string };
