@@ -46,13 +46,14 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 .side-nav { position: relative; z-index: 1; display: grid; gap: 5px; padding: 46px 0 20px; }
 .side-nav::before { content: "Workspace"; position: absolute; top: 24px; left: 13px; color: #a88a67; font-size: 9px; font-weight: 800; letter-spacing: .18em; text-transform: uppercase; }
 .side-nav button, .settings-row { width: 100%; min-height: 44px; display: flex; align-items: center; gap: 12px; padding: 11px 13px; color: #725f4e; background: transparent; border: 1px solid transparent; border-radius: 12px; cursor: pointer; text-align: left; transition: all .2s ease; }
-.side-nav button:hover { color: var(--coffee); background: #f8ede0; border-color: rgba(163,102,42,.12); }
+.side-nav button:hover, .settings-row:hover:not(:disabled) { color: var(--coffee); background: #f8ede0; border-color: rgba(163,102,42,.12); }
 .side-nav button.active { color: #fff8e9; background: linear-gradient(135deg, #4a2412, #241008); border-color: #4a2412; box-shadow: 0 7px 20px rgba(66,31,15,.2); }
 .side-nav button b { min-width: 21px; height: 21px; margin-left: auto; display: grid; place-items: center; color: var(--ink); background: var(--gold); border-radius: 50%; font-size: 10px; }
 .shop-status { position: relative; z-index: 1; display: flex; gap: 10px; align-items: center; margin: auto 0 8px; padding: 12px 13px; border: 1px solid rgba(197,139,50,.18); background: #fcf3e4; border-radius: 11px; }
 .shop-status > span { width: 9px; height: 9px; background: #dda438; border-radius: 50%; box-shadow: 0 0 0 4px rgba(221,164,56,.16); }
 .shop-status strong { font-size: 12px; }
 .settings-row { position: relative; z-index: 1; border-top: 1px solid rgba(80,45,24,.1); border-radius: 0; }
+.settings-row:disabled { cursor: wait; opacity: .65; }
 .owner-card { display: flex; align-items: center; gap: 10px; margin-top: 6px; padding: 10px; background: #f8efe2; border: 1px solid rgba(86,49,26,.1); border-radius: 12px; }
 .owner-avatar { width: 34px; height: 34px; flex: 0 0 34px; display: grid; place-items: center; color: #fff8e9; background: linear-gradient(145deg, #5a2d17, #261008); border-radius: 50%; box-shadow: 0 5px 14px rgba(54,25,10,.18); }.owner-card strong, .owner-card small { display: block; }.owner-card strong { color: #352014; font-size: 11px; }.owner-card small { margin-top: 2px; color: #9a8065; font-size: 9px; }
 .sidebar-backdrop { display: none; }

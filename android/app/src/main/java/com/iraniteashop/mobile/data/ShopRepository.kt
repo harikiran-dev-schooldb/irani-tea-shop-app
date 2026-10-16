@@ -5,6 +5,7 @@ import com.iraniteashop.mobile.model.CartLine
 import com.iraniteashop.mobile.model.Order
 import com.iraniteashop.mobile.model.ShopData
 import com.iraniteashop.mobile.network.ShopApiClient
+import com.iraniteashop.mobile.network.ShopApiException
 
 data class ShopResult(val data: ShopData, val fromCache: Boolean)
 
@@ -17,6 +18,10 @@ class ShopRepository(context: Context) {
         cache(raw)
         ShopResult(data, false)
     } catch (error: Exception) {
+        if (error is ShopApiException && error.statusCode in 400..499) {
+            clearCache()
+            throw error
+        }
         val cached = preferences.getString(CACHE_DATA, null)
         if (cached.isNullOrBlank()) throw error
         ShopResult(com.iraniteashop.mobile.network.ShopJson.parse(cached), true)
@@ -41,6 +46,10 @@ class ShopRepository(context: Context) {
 
     suspend fun toggleMenuItem(id: String, isAvailable: Boolean) =
         api.toggleMenuItem(id, isAvailable).also { cache(it.second) }.first
+
+    fun clearCache() {
+        preferences.edit().remove(CACHE_DATA).apply()
+    }
 
     private fun cache(raw: String) {
         preferences.edit().putString(CACHE_DATA, raw).apply()

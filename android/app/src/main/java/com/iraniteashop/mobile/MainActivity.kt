@@ -17,6 +17,7 @@ import com.clerk.api.Clerk
 import com.clerk.api.session.Session
 import kotlinx.coroutines.launch
 import com.iraniteashop.mobile.auth.IraniTeaSignInScreen
+import com.iraniteashop.mobile.data.ShopRepository
 import com.iraniteashop.mobile.ui.IraniTeaApp
 import com.iraniteashop.mobile.ui.theme.IraniTeaTheme
 
@@ -39,7 +40,15 @@ class MainActivity : ComponentActivity() {
                         }
                         session?.status == Session.SessionStatus.ACTIVE -> {
                             val scope = rememberCoroutineScope()
-                            IraniTeaApp(onSignOut = { scope.launch { Clerk.auth.signOut() } })
+                            IraniTeaApp(
+                                onSignOut = {
+                                    scope.launch {
+                                        ShopRepository(applicationContext).clearCache()
+                                        Clerk.auth.signOut()
+                                        recreate()
+                                    }
+                                },
+                            )
                         }
                         else -> IraniTeaSignInScreen()
                     }

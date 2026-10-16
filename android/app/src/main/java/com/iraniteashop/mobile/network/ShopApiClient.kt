@@ -19,6 +19,11 @@ import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
+class ShopApiException(
+    val statusCode: Int,
+    message: String,
+) : IllegalStateException(message)
+
 class ShopApiClient(
     private val baseUrl: String = BuildConfig.API_BASE_URL,
 ) {
@@ -123,7 +128,10 @@ class ShopApiClient(
             val response = stream?.bufferedReader()?.use { it.readText() }.orEmpty()
             if (status !in 200..299) {
                 val message = runCatching { JSONObject(response).optString("error") }.getOrNull()
-                throw IllegalStateException(message?.takeIf(String::isNotBlank) ?: "Server returned $status")
+                throw ShopApiException(
+                    status,
+                    message?.takeIf(String::isNotBlank) ?: "Server returned $status",
+                )
             }
             response
         } finally {

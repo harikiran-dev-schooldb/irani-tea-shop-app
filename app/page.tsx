@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, ReactNode, useCallback, useEffect, useState } from "react";
-import { useAuth } from "@clerk/nextjs";
+import { useAuth, useClerk } from "@clerk/nextjs";
 import {
   Banknote,
   BarChart3,
@@ -15,6 +15,7 @@ import {
   Download,
   IndianRupee,
   LayoutDashboard,
+  LogOut,
   Menu,
   Package,
   Pencil,
@@ -23,7 +24,6 @@ import {
   ReceiptIndianRupee,
   RefreshCw,
   Search,
-  Settings,
   ShoppingBag,
   Smartphone,
   Store,
@@ -68,6 +68,16 @@ type InstallPromptEvent = Event & {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 };
+
+class ShopRequestError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+  ) {
+    super(message);
+    this.name = "ShopRequestError";
+  }
+}
 
 const nav: { id: View; label: string; icon: typeof Store }[] = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -231,6 +241,7 @@ export default function Home() {
 
 function ShopManager() {
   const { getToken } = useAuth();
+  const { signOut } = useClerk();
   const [view, setView] = useState<View>("dashboard");
   const [data, setData] = useState<ShopData>(starterData);
   const [loading, setLoading] = useState(true);
@@ -250,6 +261,7 @@ function ShopManager() {
   const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(
     null,
   );
+  const [signingOut, setSigningOut] = useState(false);
 
   const loadData = useCallback(async () => {
     try {
@@ -262,7 +274,10 @@ function ShopManager() {
         const result = (await response.json().catch(() => ({}))) as {
           error?: string;
         };
-        throw new Error(result.error || "Could not load shop data.");
+        throw new ShopRequestError(
+          result.error || "Could not load shop data.",
+          response.status,
+        );
       }
       const fresh = normalizeData((await response.json()) as ShopData);
       setData(fresh);
@@ -270,6 +285,16 @@ function ShopManager() {
       setSyncState("synced");
       setError("");
     } catch (loadError) {
+      if (
+        loadError instanceof ShopRequestError &&
+        (loadError.status === 401 || loadError.status === 403)
+      ) {
+        window.localStorage.removeItem(storageKey);
+        setData(starterData);
+        setSyncState("synced");
+        setError(loadError.message);
+        return;
+      }
       const saved = window.localStorage.getItem(storageKey);
       setData(
         saved ? normalizeData(JSON.parse(saved) as ShopData) : starterData,
@@ -287,6 +312,17 @@ function ShopManager() {
       setLoading(false);
     }
   }, [getToken]);
+
+  const handleSignOut = useCallback(async () => {
+    if (signingOut) return;
+    setSigningOut(true);
+    window.localStorage.removeItem(storageKey);
+    try {
+      await signOut();
+    } finally {
+      setSigningOut(false);
+    }
+  }, [signOut, signingOut]);
 
   useEffect(() => {
     queueMicrotask(() => void loadData());
@@ -441,8 +477,13 @@ function ShopManager() {
             <small>03:00 PM – 08:00 PM</small>
           </div>
         </div>
-        <button className="settings-row">
-          <Settings size={18} /> Settings
+        <button
+          className="settings-row"
+          type="button"
+          disabled={signingOut}
+          onClick={() => void handleSignOut()}
+        >
+          <LogOut size={18} /> {signingOut ? "Signing out…" : "Sign out"}
         </button>
         <div className="owner-card">
           <span className="owner-avatar">
