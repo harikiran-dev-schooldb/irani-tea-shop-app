@@ -15,6 +15,17 @@ function allowedEmails() {
   );
 }
 
+function allowedSchoolDbSlugs() {
+  return new Set(
+    (process.env.SHOP_ADMIN_SCHOOL_SLUGS ?? "kotak")
+      .split(",")
+      .map((slug) => slug.trim().toLowerCase())
+      .filter(Boolean),
+  );
+}
+
+const SCHOOL_ADMIN_ROLES = new Set(["SUPER_ADMIN", "SCHOOL_ADMIN"]);
+
 export async function authorizeShopRequest(
   request: Request,
 ): Promise<ShopIdentity | NextResponse> {
@@ -50,9 +61,16 @@ export async function authorizeShopRequest(
 
     const { userId } = requestState.toAuth();
     const user = await clerk.users.getUser(userId);
-    const permitted = user.emailAddresses.some((entry) =>
+    const permittedByEmail = user.emailAddresses.some((entry) =>
       allowedEmails().has(entry.emailAddress.toLowerCase()),
     );
+    const metadata = user.publicMetadata;
+    const schoolSlug = typeof metadata.schoolSlug === "string" ? metadata.schoolSlug : "";
+    const role = typeof metadata.role === "string" ? metadata.role : "";
+    const permittedBySchoolDb =
+      allowedSchoolDbSlugs().has(schoolSlug.toLowerCase()) &&
+      SCHOOL_ADMIN_ROLES.has(role);
+    const permitted = permittedByEmail || permittedBySchoolDb;
     if (!permitted) {
       return NextResponse.json(
         { error: "This account is not authorised for the shop." },
