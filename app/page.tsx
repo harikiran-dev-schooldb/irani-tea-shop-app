@@ -425,7 +425,6 @@ function ShopManager() {
     .reduce((sum, item) => sum + item.amount, 0);
   const balance = cashSales - expenses;
   const overallNet = sales - expenses;
-  const showsReportDate = view === "orders" || view === "cashflow";
   const activeOrders = data.orders.filter(
     (order) => order.status !== "completed",
   );
@@ -525,28 +524,6 @@ function ShopManager() {
               <h1>{nav.find((item) => item.id === view)?.label}</h1>
             </div>
           </div>
-          {showsReportDate ? (
-            <label className="header-date-filter">
-              <CalendarDays size={17} />
-              <span>Report date</span>
-              <input
-                type="date"
-                aria-label="Filter all reports by date"
-                value={selectedDate}
-                onChange={(event) => setSelectedDate(event.target.value)}
-              />
-              {selectedDate ? (
-                <button
-                  type="button"
-                  aria-label="Show all recorded dates"
-                  title="Show all recorded dates"
-                  onClick={() => setSelectedDate("")}
-                >
-                  <X size={15} />
-                </button>
-              ) : null}
-            </label>
-          ) : null}
           <div className="top-actions">
             <span className={`sync-state ${syncState}`}>
               {syncState === "synced" ? (
@@ -616,6 +593,8 @@ function ShopManager() {
         {!loading && view === "orders" ? (
           <Orders
             orders={scopedOrders}
+            reportDate={selectedDate}
+            setReportDate={setSelectedDate}
             post={post}
             open={() => setModal("order")}
             edit={setEditTarget}
@@ -993,12 +972,16 @@ function Insights({ data }: { data: ShopData }) {
 
 function Orders({
   orders,
+  reportDate,
+  setReportDate,
   post,
   open,
   edit,
   remove,
 }: {
   orders: Order[];
+  reportDate: string;
+  setReportDate: (value: string) => void;
   post: (payload: Record<string, unknown>) => Promise<ShopData>;
   open: () => void;
   edit: (target: EditTarget) => void;
@@ -1006,6 +989,7 @@ function Orders({
 }) {
   return (
     <div className="page-content">
+      <ReportDateFilter value={reportDate} onChange={setReportDate} />
       <div className="page-tools">
         <div>
           <p>Track every cup and snack from counter to collection.</p>
@@ -1234,6 +1218,24 @@ function Cashflow({
           </small>
         </div>
         <BarChart3 size={54} />
+      </div>
+      <div className="report-toolbar">
+        <label>
+          <CalendarDays size={18} />
+          <span>Report date</span>
+          <input
+            type="date"
+            value={selectedDate}
+            onChange={(event) => setSelectedDate(event.target.value)}
+          />
+        </label>
+        {selectedDate ? (
+          <button className="text-button" onClick={() => setSelectedDate("")}>
+            Show all dates
+          </button>
+        ) : (
+          <span>Showing all recorded dates</span>
+        )}
       </div>
       <div className="payment-summary">
         <article>
