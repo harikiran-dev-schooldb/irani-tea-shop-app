@@ -92,6 +92,19 @@ class ShopViewModel(application: Application) : AndroidViewModel(application) {
         mutate("Expense saved", onComplete) { repository.addExpense(category, amount, note) }
     }
 
+    fun addSale(
+        category: String,
+        amount: Int,
+        paymentMode: String,
+        note: String,
+        onComplete: () -> Unit,
+    ) {
+        if (amount <= 0) return
+        mutate("Sale saved", onComplete) {
+            repository.addSale(category, amount, paymentMode, note)
+        }
+    }
+
     fun updateOrderStatus(id: String, status: String) {
         mutate("Order updated") { repository.updateOrderStatus(id, status) }
     }

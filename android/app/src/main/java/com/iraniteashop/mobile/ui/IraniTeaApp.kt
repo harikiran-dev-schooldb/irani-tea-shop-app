@@ -6,6 +6,7 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -43,6 +44,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -183,6 +185,7 @@ fun IraniTeaApp(
                         data = state.data,
                         saving = state.saving,
                         onExpense = viewModel::addExpense,
+                        onSale = viewModel::addSale,
                     )
                 }
             }
@@ -265,6 +268,9 @@ private fun IraniTeaNavigationDock(selected: Section, onSelect: (Section) -> Uni
 private fun DashboardScreen(data: ShopData, fromCache: Boolean) {
     val todayTransactions = data.transactions.filter { isToday(it.createdAt) }
     val sales = todayTransactions.filter { it.type == "sale" }.sumOf { it.amount }
+    val cashSales = todayTransactions
+        .filter { it.type == "sale" && it.paymentMode != "online" }
+        .sumOf { it.amount }
     val expenses = todayTransactions.filter { it.type == "expense" }.sumOf { it.amount }
     val activeOrders = data.orders.count { it.status != "completed" }
     val lowStock = data.menu.count { it.stockQty <= it.lowStockThreshold }
@@ -283,7 +289,7 @@ private fun DashboardScreen(data: ShopData, fromCache: Boolean) {
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 MetricCard("Sales", money(sales), Icons.Default.Payments, Modifier.weight(1f))
-                MetricCard("Net cash", money(sales - expenses), Icons.Outlined.Assessment, Modifier.weight(1f))
+                MetricCard("Net cash", money(cashSales - expenses), Icons.Outlined.Assessment, Modifier.weight(1f))
             }
         }
         item {
@@ -679,10 +685,14 @@ private fun ReportsScreen(
     data: ShopData,
     saving: Boolean,
     onExpense: (String, Int, String, () -> Unit) -> Unit,
+    onSale: (String, Int, String, String, () -> Unit) -> Unit,
 ) {
     var expenseOpen by remember { mutableStateOf(false) }
+    var saleOpen by remember { mutableStateOf(false) }
     val today = data.transactions.filter { isToday(it.createdAt) }
     val sales = today.filter { it.type == "sale" }.sumOf { it.amount }
+    val cashSales = today.filter { it.type == "sale" && it.paymentMode != "online" }.sumOf { it.amount }
+    val upiSales = today.filter { it.type == "sale" && it.paymentMode == "online" }.sumOf { it.amount }
     val expenses = today.filter { it.type == "expense" }.sumOf { it.amount }
 
     LazyColumn(
@@ -690,20 +700,32 @@ private fun ReportsScreen(
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         item {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Column {
                     Text("Sales & expenses", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
                     Text("Today’s cashflow", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                Button(onClick = { expenseOpen = true }) {
-                    Icon(Icons.Default.Add, contentDescription = null)
-                    Text("Expense")
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(onClick = { saleOpen = true }, modifier = Modifier.weight(1f)) {
+                        Icon(Icons.Default.Add, contentDescription = null)
+                        Text("Sale")
+                    }
+                    OutlinedButton(onClick = { expenseOpen = true }, modifier = Modifier.weight(1f)) {
+                        Icon(Icons.Default.Add, contentDescription = null)
+                        Text("Expense")
+                    }
                 }
             }
         }
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                MetricCard("Sales", money(sales), Icons.Default.Payments, Modifier.weight(1f))
+                MetricCard("Cash", money(cashSales), Icons.Default.Payments, Modifier.weight(1f))
+                MetricCard("UPI", money(upiSales), Icons.Outlined.Assessment, Modifier.weight(1f))
+            }
+        }
+        item {
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                MetricCard("Total sales", money(sales), Icons.Default.Payments, Modifier.weight(1f))
                 MetricCard("Expenses", money(expenses), Icons.AutoMirrored.Filled.ReceiptLong, Modifier.weight(1f))
             }
         }
@@ -721,6 +743,16 @@ private fun ReportsScreen(
             },
         )
     }
+
+    if (saleOpen) {
+        SaleDialog(
+            saving = saving,
+            onDismiss = { if (!saving) saleOpen = false },
+            onConfirm = { category, amount, paymentMode, note ->
+                onSale(category, amount, paymentMode, note) { saleOpen = false }
+            },
+        )
+    }
 }
 
 @Composable
@@ -729,8 +761,15 @@ private fun TransactionRow(transaction: Transaction) {
         Row(Modifier.fillMaxWidth().padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text(transaction.category, fontWeight = FontWeight.Bold)
+                val paymentLabel = when (transaction.paymentMode) {
+                    "online" -> "UPI"
+                    else -> "Cash"
+                }
                 Text(
-                    listOf(transaction.paymentMode, transaction.note).filter { it.isNotBlank() }.joinToString(" · "),
+                    listOfNotNull(
+                        paymentLabel.takeIf { transaction.type == "sale" },
+                        transaction.note.takeIf { it.isNotBlank() },
+                    ).joinToString(" · "),
                     style = MaterialTheme.typography.bodySmall,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -751,7 +790,8 @@ private fun ExpenseDialog(
     onDismiss: () -> Unit,
     onConfirm: (String, Int, String) -> Unit,
 ) {
-    var category by remember { mutableStateOf("") }
+    val categories = listOf("Stock", "Milk & tea", "Rent", "Wages", "Gas & electricity", "Other")
+    var category by remember { mutableStateOf(categories.first()) }
     var amount by remember { mutableStateOf("") }
     var note by remember { mutableStateOf("") }
     val amountValue = amount.toIntOrNull() ?: 0
@@ -760,7 +800,8 @@ private fun ExpenseDialog(
         title = { Text("Add expense") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                OutlinedTextField(category, { category = it }, label = { Text("Category") }, singleLine = true)
+                Text("Expense category", style = MaterialTheme.typography.labelLarge)
+                ChoiceChips(categories, category) { category = it }
                 OutlinedTextField(
                     amount,
                     { amount = it.filter(Char::isDigit) },
@@ -768,7 +809,12 @@ private fun ExpenseDialog(
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     singleLine = true,
                 )
-                OutlinedTextField(note, { note = it }, label = { Text("Note") })
+                OutlinedTextField(
+                    note,
+                    { note = it },
+                    label = { Text("Note") },
+                    placeholder = { Text("What was this for?") },
+                )
             }
         },
         confirmButton = {
@@ -779,6 +825,83 @@ private fun ExpenseDialog(
         },
         dismissButton = { TextButton(onClick = onDismiss, enabled = !saving) { Text("Cancel") } },
     )
+}
+
+@Composable
+private fun SaleDialog(
+    saving: Boolean,
+    onDismiss: () -> Unit,
+    onConfirm: (String, Int, String, String) -> Unit,
+) {
+    val categories = listOf("Counter sale", "Delivery", "Catering", "Other income")
+    var category by remember { mutableStateOf(categories.first()) }
+    var amount by remember { mutableStateOf("") }
+    var paymentMode by remember { mutableStateOf("cash") }
+    var note by remember { mutableStateOf("") }
+    val amountValue = amount.toIntOrNull() ?: 0
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Record a sale") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                OutlinedTextField(
+                    amount,
+                    { amount = it.filter(Char::isDigit) },
+                    label = { Text("Amount received") },
+                    prefix = { Text("₹") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    singleLine = true,
+                )
+                Text("Payment method", style = MaterialTheme.typography.labelLarge)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (paymentMode == "cash") {
+                        Button(onClick = { paymentMode = "cash" }, modifier = Modifier.weight(1f)) { Text("Cash") }
+                    } else {
+                        OutlinedButton(onClick = { paymentMode = "cash" }, modifier = Modifier.weight(1f)) { Text("Cash") }
+                    }
+                    if (paymentMode == "online") {
+                        Button(onClick = { paymentMode = "online" }, modifier = Modifier.weight(1f)) { Text("UPI") }
+                    } else {
+                        OutlinedButton(onClick = { paymentMode = "online" }, modifier = Modifier.weight(1f)) { Text("UPI") }
+                    }
+                }
+                Text("Sale type", style = MaterialTheme.typography.labelLarge)
+                ChoiceChips(categories, category) { category = it }
+                OutlinedTextField(
+                    note,
+                    { note = it },
+                    label = { Text("Note") },
+                    placeholder = { Text("Optional note") },
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = { onConfirm(category, amountValue, paymentMode, note) },
+                enabled = amountValue > 0 && !saving,
+            ) { Text("Save sale") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss, enabled = !saving) { Text("Cancel") } },
+    )
+}
+
+@Composable
+private fun ChoiceChips(
+    choices: List<String>,
+    selected: String,
+    onSelect: (String) -> Unit,
+) {
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        choices.forEach { choice ->
+            FilterChip(
+                selected = choice == selected,
+                onClick = { onSelect(choice) },
+                label = { Text(choice) },
+                modifier = Modifier.padding(end = 2.dp),
+            )
+        }
+    }
 }
 
 @Composable

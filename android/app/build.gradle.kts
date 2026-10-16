@@ -61,8 +61,8 @@ android {
         applicationId = "com.iraniteashop.mobile"
         minSdk = 26
         targetSdk = 37
-        versionCode = versionCodeOverride ?: 3
-        versionName = "1.0.2"
+        versionCode = versionCodeOverride ?: 4
+        versionName = "1.0.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "CLERK_PUBLISHABLE_KEY", "\"$clerkPublishableKey\"")

@@ -65,6 +65,21 @@ class ShopApiClient(
                 .put("note", note),
         )
 
+    suspend fun addSale(
+        category: String,
+        amount: Int,
+        paymentMode: String,
+        note: String,
+    ): Pair<ShopData, String> =
+        post(
+            JSONObject()
+                .put("kind", "sale")
+                .put("category", category)
+                .put("amount", amount)
+                .put("paymentMode", paymentMode)
+                .put("note", note),
+        )
+
     suspend fun updateOrderStatus(id: String, status: String): Pair<ShopData, String> =
         post(JSONObject().put("kind", "order-status").put("id", id).put("status", status))
 

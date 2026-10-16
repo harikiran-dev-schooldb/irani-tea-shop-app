@@ -33,6 +33,9 @@ class ShopRepository(context: Context) {
     suspend fun addExpense(category: String, amount: Int, note: String) =
         api.addExpense(category, amount, note).also { cache(it.second) }.first
 
+    suspend fun addSale(category: String, amount: Int, paymentMode: String, note: String) =
+        api.addSale(category, amount, paymentMode, note).also { cache(it.second) }.first
+
     suspend fun updateOrderStatus(id: String, status: String) =
         api.updateOrderStatus(id, status).also { cache(it.second) }.first
 
