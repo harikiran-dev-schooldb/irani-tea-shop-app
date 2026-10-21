@@ -2,9 +2,18 @@ package com.iraniteashop.mobile.ui
 
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.verticalScroll
@@ -23,6 +32,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -33,7 +43,9 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Coffee
 import androidx.compose.material.icons.filled.Payments
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.outlined.Assessment
 import androidx.compose.material.icons.outlined.Dashboard
@@ -73,13 +85,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -175,9 +190,13 @@ fun IraniTeaApp(
             IraniTeaNavigationDock(section) { section = it }
         },
     ) { padding ->
-        Column(
+        Box(
             modifier = Modifier.fillMaxSize().padding(padding),
+            contentAlignment = Alignment.TopCenter,
         ) {
+            Column(
+                modifier = Modifier.widthIn(max = 760.dp).fillMaxSize(),
+            ) {
             state.message?.let { message ->
                 Surface(
                     modifier = Modifier
@@ -201,12 +220,10 @@ fun IraniTeaApp(
                 }
             }
 
-            if (state.loading && state.data.menu.isEmpty()) {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
-                }
-            } else {
-                when (section) {
+                if (state.loading && state.data.menu.isEmpty()) {
+                    LoadingSkeleton(section)
+                } else {
+                    when (section) {
                     Section.Dashboard -> DashboardScreen(state.data, state.fromCache)
                     Section.Counter -> CounterScreen(
                         data = state.data,
@@ -233,6 +250,7 @@ fun IraniTeaApp(
                         onDelete = viewModel::deleteTransaction,
                         onCloseDay = viewModel::closeDay,
                     )
+                    }
                 }
             }
         }
@@ -264,70 +282,155 @@ private fun TopActionButton(
 }
 
 @Composable
+private fun LoadingSkeleton(section: Section) {
+    val transition = rememberInfiniteTransition(label = "loading skeleton")
+    val pulse by transition.animateFloat(
+        initialValue = .35f,
+        targetValue = .72f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(850),
+            repeatMode = RepeatMode.Reverse,
+        ),
+        label = "skeleton pulse",
+    )
+
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(horizontal = 18.dp, vertical = 14.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        item {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                SkeletonBar(82.dp, 10.dp, pulse)
+                SkeletonBar(220.dp, 28.dp, pulse)
+                SkeletonBar(280.dp, 16.dp, pulse)
+            }
+        }
+        items((0 until if (section == Section.Dashboard) 4 else 6).toList()) { index ->
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(22.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = .35f)),
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(18.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(9.dp),
+                    ) {
+                        SkeletonBar(if (index % 2 == 0) 190.dp else 150.dp, 18.dp, pulse)
+                        SkeletonBar(126.dp, 12.dp, pulse)
+                        SkeletonBar(64.dp, 16.dp, pulse)
+                    }
+                    Spacer(Modifier.width(18.dp))
+                    SkeletonBar(92.dp, 44.dp, pulse)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SkeletonBar(width: androidx.compose.ui.unit.Dp, height: androidx.compose.ui.unit.Dp, pulse: Float) {
+    Box(
+        Modifier
+            .width(width)
+            .height(height)
+            .clip(RoundedCornerShape(8.dp))
+            .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = pulse)),
+    )
+}
+
+@Composable
 private fun IraniTeaNavigationDock(selected: Section, onSelect: (Section) -> Unit) {
+    val haptics = LocalHapticFeedback.current
     val shape = RoundedCornerShape(30.dp)
-    Surface(
+    Box(
         modifier = Modifier
             .fillMaxWidth()
             .navigationBarsPadding()
-            .padding(horizontal = 16.dp, vertical = 8.dp)
-            .shadow(
-                elevation = 16.dp,
-                shape = shape,
-                ambientColor = MaterialTheme.colorScheme.primary.copy(alpha = .08f),
-                spotColor = MaterialTheme.colorScheme.primary.copy(alpha = .13f),
-            ),
-        shape = shape,
-        color = Color.Transparent,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = .70f)),
+            .padding(vertical = 8.dp),
+        contentAlignment = Alignment.Center,
     ) {
-        Row(
+        Surface(
             modifier = Modifier
-                .background(
-                    Brush.linearGradient(
-                        listOf(
-                            MaterialTheme.colorScheme.surface,
-                            MaterialTheme.colorScheme.secondaryContainer.copy(alpha = .34f),
-                            MaterialTheme.colorScheme.surface,
-                        ),
-                    ),
-                )
-                .padding(5.dp),
+                .widthIn(max = 720.dp)
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+                .shadow(
+                    elevation = 16.dp,
+                    shape = shape,
+                    ambientColor = MaterialTheme.colorScheme.primary.copy(alpha = .08f),
+                    spotColor = MaterialTheme.colorScheme.primary.copy(alpha = .13f),
+                ),
+            shape = shape,
+            color = Color.Transparent,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = .70f)),
         ) {
-            Section.entries.forEach { item ->
-                val active = selected == item
-                Column(
-                    modifier = Modifier
-                        .weight(1f)
-                        .clip(RoundedCornerShape(25.dp))
-                        .background(
-                            if (active) MaterialTheme.colorScheme.secondaryContainer
-                            else Color.Transparent,
-                        )
-                        .selectable(
-                            selected = active,
-                            role = Role.Tab,
-                            onClick = { onSelect(item) },
-                        )
-                        .padding(vertical = 9.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Icon(
-                        imageVector = item.icon,
-                        contentDescription = item.label,
-                        modifier = Modifier.size(22.dp),
-                        tint = if (active) MaterialTheme.colorScheme.secondary
-                        else MaterialTheme.colorScheme.onSurfaceVariant,
+            Row(
+                modifier = Modifier
+                    .background(
+                        Brush.linearGradient(
+                            listOf(
+                                MaterialTheme.colorScheme.surface,
+                                MaterialTheme.colorScheme.secondaryContainer.copy(alpha = .34f),
+                                MaterialTheme.colorScheme.surface,
+                            ),
+                        ),
                     )
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        text = item.label,
-                        style = MaterialTheme.typography.labelMedium,
-                        color = if (active) MaterialTheme.colorScheme.primary
-                        else MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontWeight = if (active) FontWeight.Bold else FontWeight.Medium,
-                        maxLines = 1,
+                    .padding(5.dp),
+            ) {
+                Section.entries.forEach { item ->
+                    val active = selected == item
+                    val interactionSource = remember(item) { MutableInteractionSource() }
+                    val pressed by interactionSource.collectIsPressedAsState()
+                    val itemScale by animateFloatAsState(
+                        targetValue = if (pressed) .96f else 1f,
+                        animationSpec = tween(120),
+                        label = "navigation press",
                     )
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .scale(itemScale)
+                            .clip(RoundedCornerShape(25.dp))
+                            .background(
+                                if (active) MaterialTheme.colorScheme.secondaryContainer
+                                else Color.Transparent,
+                            )
+                            .selectable(
+                                selected = active,
+                                interactionSource = interactionSource,
+                                indication = LocalIndication.current,
+                                role = Role.Tab,
+                                onClick = {
+                                    haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    onSelect(item)
+                                },
+                            )
+                            .padding(vertical = 9.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        Icon(
+                            imageVector = item.icon,
+                            contentDescription = item.label,
+                            modifier = Modifier.size(22.dp),
+                            tint = if (active) MaterialTheme.colorScheme.secondary
+                            else MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            text = item.label,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = if (active) MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontWeight = if (active) FontWeight.Bold else FontWeight.Medium,
+                            maxLines = 1,
+                        )
+                    }
                 }
             }
         }
@@ -399,6 +502,10 @@ private fun CounterScreen(
     onPlaceOrder: (String, String, () -> Unit) -> Unit,
 ) {
     var checkoutOpen by remember { mutableStateOf(false) }
+    var query by remember { mutableStateOf("") }
+    var category by remember { mutableStateOf("All") }
+    val haptics = LocalHapticFeedback.current
+    val filteredMenu = filterMenu(data.menu, query, category)
     val total = cart.sumOf { it.total }
 
     Box(Modifier.fillMaxSize()) {
@@ -418,7 +525,19 @@ private fun CounterScreen(
                     eyebrow = "NEW ORDER",
                 )
             }
-            items(data.menu, key = { it.id }) { item ->
+            item {
+                MenuFilters(
+                    menu = data.menu,
+                    query = query,
+                    selectedCategory = category,
+                    onQueryChange = { query = it },
+                    onCategoryChange = { category = it },
+                )
+            }
+            if (filteredMenu.isEmpty()) {
+                item { EmptyCard("No menu items match this search.") }
+            }
+            items(filteredMenu, key = { it.id }) { item ->
                 val quantity = cart.firstOrNull { it.item.id == item.id }?.quantity ?: 0
                 MenuOrderCard(item, quantity, onAdd, onQuantity)
             }
@@ -453,7 +572,10 @@ private fun CounterScreen(
                         )
                     }
                     Button(
-                        onClick = { checkoutOpen = true },
+                        onClick = {
+                            haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            checkoutOpen = true
+                        },
                         enabled = !saving,
                         shape = RoundedCornerShape(15.dp),
                         colors = ButtonDefaults.buttonColors(
@@ -488,6 +610,14 @@ private fun MenuOrderCard(
     onQuantity: (String, Int) -> Unit,
 ) {
     val enabled = item.isAvailable && item.stockQty > 0
+    val haptics = LocalHapticFeedback.current
+    val addInteraction = remember { MutableInteractionSource() }
+    val addPressed by addInteraction.collectIsPressedAsState()
+    val addScale by animateFloatAsState(
+        targetValue = if (addPressed) .96f else 1f,
+        animationSpec = tween(120),
+        label = "add item press",
+    )
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(22.dp),
@@ -533,8 +663,13 @@ private fun MenuOrderCard(
             Spacer(Modifier.width(12.dp))
             if (quantity == 0) {
                 FilledTonalButton(
-                    onClick = { onAdd(item) },
+                    onClick = {
+                        haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        onAdd(item)
+                    },
+                    modifier = Modifier.scale(addScale),
                     enabled = enabled,
+                    interactionSource = addInteraction,
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.filledTonalButtonColors(
                         containerColor = MaterialTheme.colorScheme.secondaryContainer,
@@ -557,11 +692,20 @@ private fun MenuOrderCard(
                         modifier = Modifier.padding(horizontal = 2.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                    IconButton(onClick = { onQuantity(item.id, -1) }) {
+                    IconButton(onClick = {
+                        haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        onQuantity(item.id, -1)
+                    }) {
                         Icon(Icons.Default.Remove, contentDescription = "Remove one", modifier = Modifier.size(19.dp))
                     }
                     Text(quantity.toString(), fontWeight = FontWeight.Bold)
-                    IconButton(onClick = { onQuantity(item.id, 1) }, enabled = quantity < item.stockQty) {
+                    IconButton(
+                        onClick = {
+                            haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            onQuantity(item.id, 1)
+                        },
+                        enabled = quantity < item.stockQty,
+                    ) {
                         Icon(Icons.Default.Add, contentDescription = "Add one", modifier = Modifier.size(19.dp))
                     }
                     }
@@ -800,6 +944,11 @@ private fun StatusPill(status: String) {
 
 @Composable
 private fun MenuScreen(menu: List<MenuItem>, saving: Boolean, onToggle: (MenuItem) -> Unit) {
+    var query by remember { mutableStateOf("") }
+    var category by remember { mutableStateOf("All") }
+    val haptics = LocalHapticFeedback.current
+    val filteredMenu = filterMenu(menu, query, category)
+
     LazyColumn(
         contentPadding = PaddingValues(horizontal = 18.dp, vertical = 14.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -811,7 +960,19 @@ private fun MenuScreen(menu: List<MenuItem>, saving: Boolean, onToggle: (MenuIte
                 eyebrow = "${menu.count { it.isAvailable }} OF ${menu.size} AVAILABLE",
             )
         }
-        items(menu, key = { it.id }) { item ->
+        item {
+            MenuFilters(
+                menu = menu,
+                query = query,
+                selectedCategory = category,
+                onQueryChange = { query = it },
+                onCategoryChange = { category = it },
+            )
+        }
+        if (filteredMenu.isEmpty()) {
+            item { EmptyCard("No menu items match this search.") }
+        }
+        items(filteredMenu, key = { it.id }) { item ->
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(22.dp),
@@ -857,19 +1018,31 @@ private fun MenuScreen(menu: List<MenuItem>, saving: Boolean, onToggle: (MenuIte
                         }
                     }
                     Spacer(Modifier.width(14.dp))
-                    Switch(
-                        checked = item.isAvailable,
-                        onCheckedChange = { onToggle(item) },
-                        enabled = !saving,
-                        colors = SwitchDefaults.colors(
-                            checkedThumbColor = MaterialTheme.colorScheme.surface,
-                            checkedTrackColor = MaterialTheme.colorScheme.secondary,
-                            checkedBorderColor = MaterialTheme.colorScheme.secondary,
-                            uncheckedThumbColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                            uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant,
-                            uncheckedBorderColor = MaterialTheme.colorScheme.outline,
-                        ),
-                    )
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text(
+                            if (item.isAvailable) "Available" else "Paused",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = if (item.isAvailable) MaterialTheme.colorScheme.tertiary
+                            else MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Switch(
+                            checked = item.isAvailable,
+                            onCheckedChange = {
+                                haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                onToggle(item)
+                            },
+                            enabled = !saving,
+                            colors = SwitchDefaults.colors(
+                                checkedThumbColor = MaterialTheme.colorScheme.surface,
+                                checkedTrackColor = MaterialTheme.colorScheme.secondary,
+                                checkedBorderColor = MaterialTheme.colorScheme.secondary,
+                                uncheckedThumbColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant,
+                                uncheckedBorderColor = MaterialTheme.colorScheme.outline,
+                            ),
+                        )
+                    }
                 }
             }
         }
@@ -1344,6 +1517,67 @@ private fun ChoiceChips(
                 modifier = Modifier.padding(end = 2.dp),
             )
         }
+    }
+}
+
+@Composable
+private fun MenuFilters(
+    menu: List<MenuItem>,
+    query: String,
+    selectedCategory: String,
+    onQueryChange: (String) -> Unit,
+    onCategoryChange: (String) -> Unit,
+) {
+    val categories = remember(menu) {
+        listOf("All") + menu.map { it.category.trim() }.filter { it.isNotEmpty() }.distinct().sorted()
+    }
+
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(9.dp),
+    ) {
+        OutlinedTextField(
+            value = query,
+            onValueChange = onQueryChange,
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            shape = RoundedCornerShape(17.dp),
+            leadingIcon = {
+                Icon(Icons.Default.Search, contentDescription = null, modifier = Modifier.size(20.dp))
+            },
+            trailingIcon = if (query.isNotEmpty()) {
+                {
+                    IconButton(onClick = { onQueryChange("") }) {
+                        Icon(Icons.Default.Close, contentDescription = "Clear search")
+                    }
+                }
+            } else null,
+            placeholder = { Text("Search menu items") },
+        )
+        if (categories.size > 2) {
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(7.dp),
+                verticalArrangement = Arrangement.spacedBy(7.dp),
+            ) {
+                categories.forEach { category ->
+                    FilterChip(
+                        selected = selectedCategory == category,
+                        onClick = { onCategoryChange(category) },
+                        label = { Text(category) },
+                    )
+                }
+            }
+        }
+    }
+}
+
+private fun filterMenu(menu: List<MenuItem>, query: String, category: String): List<MenuItem> {
+    val search = query.trim()
+    return menu.filter { item ->
+        (category == "All" || item.category == category) &&
+            (search.isEmpty() ||
+                item.name.contains(search, ignoreCase = true) ||
+                item.category.contains(search, ignoreCase = true))
     }
 }
 
