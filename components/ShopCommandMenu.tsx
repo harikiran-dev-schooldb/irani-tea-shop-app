@@ -6,6 +6,8 @@ import {
   BookOpen,
   Coffee,
   LayoutDashboard,
+  Package,
+  BarChart3,
   Plus,
   ReceiptIndianRupee,
   Search,
@@ -16,7 +18,7 @@ import {
 } from "lucide-react";
 import type { MenuItem } from "@/lib/shop-data";
 
-type View = "dashboard" | "orders" | "menu" | "cashflow" | "expenses" | "storefront";
+type View = "dashboard" | "orders" | "menu" | "cashflow" | "expenses" | "storefront" | "inventory" | "profit";
 
 type Props = {
   open: boolean;
@@ -34,6 +36,8 @@ const destinations = [
   { id: "cashflow", label: "Sales report", description: "Cash, UPI and daily closing", icon: WalletCards },
   { id: "expenses", label: "Expenses", description: "Review shop spending", icon: ReceiptIndianRupee },
   { id: "storefront", label: "Counter", description: "Point of sale and checkout", icon: Store },
+  { id: "inventory", label: "Inventory", description: "Ingredients, recipes, purchases and wastage", icon: Package },
+  { id: "profit", label: "Profit reports", description: "All-time profit, costs and CSV exports", icon: BarChart3 },
 ] as const;
 
 export default function ShopCommandMenu({

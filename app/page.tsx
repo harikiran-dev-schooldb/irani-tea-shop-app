@@ -44,6 +44,7 @@ import Image from "next/image";
 
 import WhatsAppAuthGate from "@/components/WhatsAppAuthGate";
 import ShopCommandMenu from "@/components/ShopCommandMenu";
+import BusinessHub from "@/components/BusinessHub";
 import type {
   DailyClosing,
   MenuItem,
@@ -69,7 +70,9 @@ type View =
   | "menu"
   | "cashflow"
   | "expenses"
-  | "storefront";
+  | "storefront"
+  | "inventory"
+  | "profit";
 type InstallPromptEvent = Event & {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
@@ -92,6 +95,8 @@ const nav: { id: View; label: string; icon: typeof Store }[] = [
   { id: "cashflow", label: "Sales report", icon: WalletCards },
   { id: "expenses", label: "Expenses", icon: ReceiptIndianRupee },
   { id: "storefront", label: "Counter", icon: Store },
+  { id: "inventory", label: "Inventory", icon: Package },
+  { id: "profit", label: "Profit reports", icon: BarChart3 },
 ];
 
 const money = (value: number) => `₹${value.toLocaleString("en-IN")}`;
@@ -778,6 +783,9 @@ function ShopManager() {
             edit={setEditTarget}
             remove={(id) => removeRecord("transaction", id)}
           />
+        ) : null}
+        {!loading && (view === "inventory" || view === "profit") ? (
+          <BusinessHub key={view} mode={view} />
         ) : null}
         {!loading && view === "storefront" ? (
           <Counter

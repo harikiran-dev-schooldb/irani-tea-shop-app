@@ -1,0 +1,64 @@
+/* Premium Irani Tea business operations */
+.app-shell .biz-workspace { display: grid; gap: 17px; }
+.app-shell .biz-heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 15px; }
+.app-shell .biz-heading h2 { margin: 0 0 8px; font-size: clamp(24px,2.5vw,32px); font-weight: 800; letter-spacing: -.04em; }
+.app-shell .biz-heading > div > p:last-child { margin: 0; color: #7a8798; font-size: 12px; line-height: 1.6; }
+.app-shell .biz-stat-grid { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 11px; }
+.app-shell .biz-stat { display: grid; justify-items: start; gap: 8px; padding: 18px; border: 1px solid #e7eaf0; border-radius: 16px; background: #fff; box-shadow: 0 8px 24px rgba(15,23,42,.04); }
+.app-shell .biz-stat-icon { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 10px; background: #f8ecdb; color: #93622e; }
+.app-shell .biz-stat > span:not(.biz-stat-icon) { color: #84909f; font-size: 11px; font-weight: 700; }
+.app-shell .biz-stat strong { color: #1f2d3f; font-size: clamp(18px,2vw,25px); letter-spacing: -.035em; }
+.app-shell .biz-stat small { color: #97a0ad; font-size: 10px; }
+.app-shell .biz-tabs { display: flex; flex-wrap: wrap; gap: 7px; border-bottom: 1px solid #e4e8ef; padding: 0 0 11px; }
+.app-shell .biz-tabs button { display: inline-flex; align-items: center; gap: 8px; padding: 10px 13px; border: 1px solid transparent; border-radius: 10px; color: #687484; background: transparent; font-weight: 800; font-size: 11px; cursor: pointer; }
+.app-shell .biz-tabs button.active { background: #f8ede0; border-color: #f0dbc0; color: #8b5429; }
+.app-shell .biz-columns { display: grid; grid-template-columns: minmax(0,1.5fr) minmax(290px,1fr); gap: 14px; align-items: start; }
+.app-shell .biz-panel { min-width: 0; padding: 18px; border-radius: 17px; border: 1px solid #e7eaf0; background: #fff; box-shadow: 0 10px 25px rgba(15,23,42,.04); }
+.app-shell .biz-panel-title { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 7px; margin: 0 0 16px; }
+.app-shell .biz-panel-title h3 { margin: 0; color: #253347; font-size: 15px; font-weight: 800; }
+.app-shell .biz-panel-title small { color: #9da6b3; font-size: 10px; }
+.app-shell .biz-table-scroll { overflow-x: auto; max-height: 480px; scrollbar-width: thin; }
+.app-shell .biz-table { width: 100%; border-collapse: collapse; font-size: 11px; white-space: nowrap; }
+.app-shell .biz-table th { text-align: left; padding: 11px 13px; background: #f7f8fa; color: #818c9b; font-weight: 800; position: sticky; top: 0; }
+.app-shell .biz-table td { padding: 13px; border-bottom: 1px solid #eef1f5; color: #566273; }
+.app-shell .biz-table td strong, .app-shell .biz-table td small { display: block; }
+.app-shell .biz-table td strong { color: #334155; }
+.app-shell .biz-table td small { color: #9da5b1; margin-top: 3px; }
+.app-shell .biz-table .biz-empty, .app-shell .biz-empty { padding: 24px; color: #9da5b1; font-size: 12px; text-align: center; }
+.app-shell .biz-low, .app-shell .biz-loss { color: #bb4f37!important; font-weight: 800; }
+.app-shell .biz-gain { color: #247d61!important; font-weight: 800; }
+.app-shell .biz-form { display: grid; gap: 13px; }
+.app-shell .biz-field { display: grid; gap: 7px; }
+.app-shell .biz-field > span { color: #677486; font-size: 11px; font-weight: 800; }
+.app-shell .biz-field input, .app-shell .biz-field select { width: 100%; min-width: 0; min-height: 44px; padding: 9px 11px; border: 1px solid #dde3eb; border-radius: 10px; background: #fff; color: #334155; outline: none; font-size: 12px; }
+.app-shell .biz-field input:focus, .app-shell .biz-field select:focus { border-color: #b98444; box-shadow: 0 0 0 3px rgba(185,132,68,.12); }
+.app-shell .biz-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; }
+.app-shell .biz-form button.primary { width: 100%; }
+.app-shell .biz-form button:disabled { opacity: .5; cursor: wait; }
+.app-shell .biz-help { padding: 11px; border-radius: 10px; background: #faf6ee; color: #7a6b58; line-height: 1.6; font-size: 11px; }
+.app-shell .biz-error { display: flex; align-items: center; gap: 8px; margin: 0; padding: 12px; border: 1px solid #e7aea7; border-radius: 11px; background: #fff2ef; color: #a63f34; font-size: 12px; }
+.app-shell .biz-report-filter { display: flex; flex-wrap: wrap; gap: 9px; align-items: center; }
+.app-shell .biz-report-filter label { display: inline-flex; align-items: center; gap: 8px; padding: 6px 11px; border: 1px solid #e1e6ee; border-radius: 11px; background: #fff; color: #718096; font-size: 11px; }
+.app-shell .biz-report-filter input { border: none; outline: none; background: transparent; color: #334155; font-size: 12px; min-height: 28px; }
+.app-shell .biz-report-filter .primary, .app-shell .biz-report-filter .secondary { min-height: 41px; }
+.app-shell .biz-chart-panel { padding: 20px; }
+.app-shell .biz-chart { min-height: 185px; display: flex; align-items: end; gap: 9px; justify-content: space-around; overflow-x: auto; padding: 14px 4px 4px; }
+.app-shell .biz-chart-day { flex: 1 0 28px; max-width: 70px; min-width: 27px; height: 160px; display: flex; flex-direction: column; justify-content: flex-end; gap: 8px; }
+.app-shell .biz-chart-bars { display: flex; height: 130px; gap: 3px; align-items: flex-end; justify-content: center; border-bottom: 1px solid #e3e7ed; }
+.app-shell .biz-chart-bars span { width: 11px; min-height: 2px; max-height: 100%; border-radius: 5px 5px 0 0; background: #ad763a; }
+.app-shell .biz-chart-bars span + span { background: #ced7e4; }
+.app-shell .biz-chart-day small { color: #929dad; text-align: center; font-size: 9px; }
+.app-shell .biz-chart-legend { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; color: #8a96a5; font-size: 10px; }
+.app-shell .biz-chart-legend i { width: 9px; height: 9px; border-radius: 3px; background: #ad763a; }
+.app-shell .biz-chart-legend i:nth-of-type(2) { margin-left: 8px; background: #ced7e4; }
+.app-shell.theme-dark .biz-stat, .app-shell.theme-dark .biz-panel, .app-shell.theme-dark .biz-report-filter label, .app-shell.theme-dark .biz-field input, .app-shell.theme-dark .biz-field select { background: #172237; border-color: #304056; color: #e9eff8; }
+.app-shell.theme-dark .biz-stat strong, .app-shell.theme-dark .biz-heading h2, .app-shell.theme-dark .biz-panel-title h3, .app-shell.theme-dark .biz-table td strong, .app-shell.theme-dark .biz-report-filter input { color: #eaf1fc; }
+.app-shell.theme-dark .biz-table th { background: #203049; color: #bac7d8; }
+.app-shell.theme-dark .biz-table td { color: #b5c2d3; border-color: #2e3b4e; }
+.app-shell.theme-dark .biz-tabs { border-color: #334155; }
+.app-shell.theme-dark .biz-tabs button { color: #b9c7d8; }
+.app-shell.theme-dark .biz-tabs button.active, .app-shell.theme-dark .biz-help { background: #342c28; color: #e7c89e; border-color: #615039; }
+.app-shell.theme-dark .biz-error { background: #422b2c; border-color: #78494a; color: #f8bdba; }
+.app-shell.theme-dark .biz-chart-bars { border-color: #34465b; }
+@media (max-width: 1180px) { .app-shell .biz-stat-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } .app-shell .biz-columns { grid-template-columns: 1fr; } }
+@media (max-width: 600px) { .app-shell .biz-stat-grid { gap: 8px; } .app-shell .biz-stat { padding: 13px; } .app-shell .biz-heading { align-items: flex-start; } .app-shell .biz-heading h2 { font-size: 23px; } .app-shell .biz-form-grid { grid-template-columns: 1fr; } .app-shell .biz-report-filter label { flex: 1 1 100%; justify-content: space-between; } .app-shell .biz-report-filter .primary, .app-shell .biz-report-filter .secondary { flex: 1 1 auto; } .app-shell .biz-tabs { display: grid; grid-template-columns: 1fr 1fr; } .app-shell .biz-tabs button { justify-content: center; } }
