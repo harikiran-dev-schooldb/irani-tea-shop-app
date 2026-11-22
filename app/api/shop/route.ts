@@ -5,6 +5,9 @@ import { randomUUID } from "node:crypto";
 import { getDb } from "@/db";
 import {
   dailyClosings,
+  ingredientMovements,
+  ingredients,
+  recipeIngredients,
   menuItems,
   orderItems,
   orders,
@@ -193,6 +196,29 @@ export async function POST(request: Request) {
           throw new Error("The menu price or item quantity changed. Refresh your order and try again.");
         }
       }
+      const recipes = quantities.size
+        ? await db.select().from(recipeIngredients)
+            .where(inArray(recipeIngredients.menuItemId, [...quantities.keys()]))
+        : [];
+      const ingredientQuantities = new Map<string, number>();
+      for (const recipe of recipes) {
+        const count = quantities.get(recipe.menuItemId) ?? 0;
+        ingredientQuantities.set(
+          recipe.ingredientId,
+          (ingredientQuantities.get(recipe.ingredientId) ?? 0) + recipe.quantity * count,
+        );
+      }
+      const selectedIngredients = ingredientQuantities.size
+        ? await db.select().from(ingredients)
+            .where(inArray(ingredients.id, [...ingredientQuantities.keys()]))
+        : [];
+      const ingredientById = new Map(selectedIngredients.map((item) => [item.id, item]));
+      for (const [ingredientId, required] of ingredientQuantities) {
+        const ingredient = ingredientById.get(ingredientId);
+        if (!ingredient || ingredient.stockQty < required) {
+          throw new Error(`Insufficient ${ingredient?.name ?? "ingredient"} to complete this order. Replenish stock.`);
+        }
+      }
       const orderId = randomUUID();
       // Neon HTTP batch is atomic: order, payment, items, and inventory succeed
       // together. Concurrent stock shortages fail the final checks and roll back.
@@ -216,6 +242,28 @@ export async function POST(request: Request) {
             select 1 from ${menuItems}
             where ${menuItems.id} = ${id} and ${menuItems.stockQty} >= 0
           ) then 1 else 0 end) as inventory_valid`),
+        ),
+        ...[...ingredientQuantities].map(([ingredientId, quantity]) =>
+          db.update(ingredients)
+            .set({ stockQty: sql`${ingredients.stockQty} - ${quantity}` })
+            .where(eq(ingredients.id, ingredientId)),
+        ),
+        ...(ingredientQuantities.size
+          ? [db.insert(ingredientMovements).values([...ingredientQuantities].map(([ingredientId, quantity]) => ({
+              ingredientId,
+              orderId,
+              quantityChange: -quantity,
+              unitCostPaise: ingredientById.get(ingredientId)!.unitCostPaise,
+              reason: "consumption",
+              note: "Recipe consumption",
+              createdAt,
+            })))]
+          : []),
+        ...[...ingredientQuantities].map(([ingredientId]) =>
+          db.execute(sql`select 1 / (case when exists (
+            select 1 from ${ingredients}
+            where ${ingredients.id} = ${ingredientId} and ${ingredients.stockQty} >= 0
+          ) then 1 else 0 end) as ingredient_stock_valid`),
         ),
       ]);
       createdOrderId = orderId;
@@ -244,16 +292,23 @@ export async function POST(request: Request) {
         .from(transactions)
         .where(eq(transactions.id, id));
       if (entry?.orderId) {
-        const lines = await db
-          .select()
-          .from(orderItems)
-          .where(eq(orderItems.orderId, entry.orderId));
+        const [lines, consumed] = await Promise.all([
+          db.select().from(orderItems).where(eq(orderItems.orderId, entry.orderId)),
+          db.select().from(ingredientMovements).where(and(
+            eq(ingredientMovements.orderId, entry.orderId), eq(ingredientMovements.reason, "consumption"),
+          )),
+        ]);
         await db.batch([
           db.delete(transactions).where(eq(transactions.id, id)),
           ...lines.filter((line) => Boolean(line.menuItemId)).map((line) =>
             db.update(menuItems)
               .set({ stockQty: sql`${menuItems.stockQty} + ${line.quantity}` })
               .where(eq(menuItems.id, line.menuItemId!)),
+          ),
+          ...consumed.map((movement) =>
+            db.update(ingredients)
+              .set({ stockQty: sql`${ingredients.stockQty} - ${movement.quantityChange}` })
+              .where(eq(ingredients.id, movement.ingredientId)),
           ),
           db.delete(orders).where(eq(orders.id, entry.orderId!)),
         ]);
@@ -285,16 +340,23 @@ export async function POST(request: Request) {
         .where(eq(transactions.orderId, id));
     } else if (kind === "order-delete") {
       const id = cleanText(payload.id);
-      const lines = await db
-        .select()
-        .from(orderItems)
-        .where(eq(orderItems.orderId, id));
+      const [lines, consumed] = await Promise.all([
+        db.select().from(orderItems).where(eq(orderItems.orderId, id)),
+        db.select().from(ingredientMovements).where(and(
+          eq(ingredientMovements.orderId, id), eq(ingredientMovements.reason, "consumption"),
+        )),
+      ]);
       await db.batch([
         db.delete(transactions).where(eq(transactions.orderId, id)),
         ...lines.filter((line) => Boolean(line.menuItemId)).map((line) =>
           db.update(menuItems)
             .set({ stockQty: sql`${menuItems.stockQty} + ${line.quantity}` })
             .where(eq(menuItems.id, line.menuItemId!)),
+        ),
+        ...consumed.map((movement) =>
+          db.update(ingredients)
+            .set({ stockQty: sql`${ingredients.stockQty} - ${movement.quantityChange}` })
+            .where(eq(ingredients.id, movement.ingredientId)),
         ),
         db.delete(orders).where(eq(orders.id, id)),
       ]);
