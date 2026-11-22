@@ -249,12 +249,12 @@ export async function POST(request: Request) {
           .from(orderItems)
           .where(eq(orderItems.orderId, entry.orderId));
         await db.batch([
+          db.delete(transactions).where(eq(transactions.id, id)),
           ...lines.filter((line) => Boolean(line.menuItemId)).map((line) =>
             db.update(menuItems)
               .set({ stockQty: sql`${menuItems.stockQty} + ${line.quantity}` })
               .where(eq(menuItems.id, line.menuItemId!)),
           ),
-          db.delete(transactions).where(eq(transactions.id, id)),
           db.delete(orders).where(eq(orders.id, entry.orderId!)),
         ]);
       } else {
@@ -290,12 +290,12 @@ export async function POST(request: Request) {
         .from(orderItems)
         .where(eq(orderItems.orderId, id));
       await db.batch([
+        db.delete(transactions).where(eq(transactions.orderId, id)),
         ...lines.filter((line) => Boolean(line.menuItemId)).map((line) =>
           db.update(menuItems)
             .set({ stockQty: sql`${menuItems.stockQty} + ${line.quantity}` })
             .where(eq(menuItems.id, line.menuItemId!)),
         ),
-        db.delete(transactions).where(eq(transactions.orderId, id)),
         db.delete(orders).where(eq(orders.id, id)),
       ]);
     } else if (kind === "daily-closing") {
