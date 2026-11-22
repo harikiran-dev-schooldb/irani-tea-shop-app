@@ -349,8 +349,12 @@ function ShopManager() {
   }, [signOut, signingOut]);
 
   useEffect(() => {
-    setSidebarCollapsed(window.localStorage.getItem("irani-tea-sidebar-collapsed") === "true");
-    setTheme(window.localStorage.getItem("irani-tea-workspace-theme") === "dark" ? "dark" : "light");
+    // Defer client-only preferences until after hydration.
+    const frame = window.requestAnimationFrame(() => {
+      setSidebarCollapsed(window.localStorage.getItem("irani-tea-sidebar-collapsed") === "true");
+      setTheme(window.localStorage.getItem("irani-tea-workspace-theme") === "dark" ? "dark" : "light");
+    });
+    return () => window.cancelAnimationFrame(frame);
   }, []);
 
   useEffect(() => {
@@ -787,6 +791,7 @@ function ShopManager() {
       </main>
 
       <ShopCommandMenu
+        key={searchOpen ? "open" : "closed"}
         open={searchOpen}
         onClose={() => setSearchOpen(false)}
         menu={data.menu}
@@ -1180,11 +1185,12 @@ function Orders({
   const currentPage = Math.min(page, totalPages);
   const visibleOrders = orders.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
-  useEffect(() => setPage(1), [reportDate]);
-
   return (
     <div className="page-content">
-      <ReportDateFilter value={reportDate} onChange={setReportDate} />
+      <ReportDateFilter value={reportDate} onChange={(value) => {
+        setPage(1);
+        setReportDate(value);
+      }} />
       <div className="page-tools">
         <div>
           <p>Track every cup and snack from counter to collection.</p>

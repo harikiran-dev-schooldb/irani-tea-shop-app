@@ -49,7 +49,6 @@ export default function ShopCommandMenu({
 
   useEffect(() => {
     if (!open) return;
-    setQuery("");
     const frame = window.requestAnimationFrame(() => inputRef.current?.focus());
     return () => window.cancelAnimationFrame(frame);
   }, [open]);
