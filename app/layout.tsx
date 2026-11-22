@@ -4,11 +4,12 @@ import ClerkAppProvider from "@/components/ClerkAppProvider";
 import "./globals.css";
 import "./premium.css";
 import "./business.css";
+import "./pwa.css";
 
 export const metadata: Metadata = {
   applicationName: "Irani Tea",
   title: "Irani Tea — Shop Manager",
-  description: "Menu, orders, cashflow and expenses for an Irani Tea shop.",
+  description: "Irani Tea POS, ingredient inventory, recipe costing and business profit reports.",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,

@@ -45,6 +45,7 @@ import Image from "next/image";
 import WhatsAppAuthGate from "@/components/WhatsAppAuthGate";
 import ShopCommandMenu from "@/components/ShopCommandMenu";
 import BusinessHub from "@/components/BusinessHub";
+import PwaUpdateNotice from "@/components/PwaUpdateNotice";
 import type {
   DailyClosing,
   MenuItem,
@@ -285,6 +286,7 @@ function ShopManager() {
     null,
   );
   const [signingOut, setSigningOut] = useState(false);
+  const cacheKey = user?.id ? `${storageKey}:${user.id}` : null;
   const ownerName =
     user?.fullName || user?.primaryEmailAddress?.emailAddress || "Shop staff";
   const ownerRole =
@@ -310,7 +312,7 @@ function ShopManager() {
       }
       const fresh = normalizeData((await response.json()) as ShopData);
       setData(fresh);
-      window.localStorage.setItem(storageKey, JSON.stringify(fresh));
+      if (cacheKey) window.localStorage.setItem(cacheKey, JSON.stringify(fresh));
       setSyncState("synced");
       setError("");
     } catch (loadError) {
@@ -318,16 +320,19 @@ function ShopManager() {
         loadError instanceof ShopRequestError &&
         (loadError.status === 401 || loadError.status === 403)
       ) {
-        window.localStorage.removeItem(storageKey);
+        if (cacheKey) window.localStorage.removeItem(cacheKey);
         setData(starterData);
         setSyncState("synced");
         setError(loadError.message);
         return;
       }
-      const saved = window.localStorage.getItem(storageKey);
-      setData(
-        saved ? normalizeData(JSON.parse(saved) as ShopData) : starterData,
-      );
+      const saved = cacheKey ? window.localStorage.getItem(cacheKey) : null;
+      try {
+        setData(saved ? normalizeData(JSON.parse(saved) as ShopData) : starterData);
+      } catch {
+        if (cacheKey) window.localStorage.removeItem(cacheKey);
+        setData(starterData);
+      }
       const state = navigator.onLine ? "local" : "offline";
       setSyncState(state);
       setError(
@@ -340,18 +345,28 @@ function ShopManager() {
     } finally {
       setLoading(false);
     }
-  }, [getToken]);
+  }, [getToken, cacheKey]);
 
   const handleSignOut = useCallback(async () => {
     if (signingOut) return;
     setSigningOut(true);
-    window.localStorage.removeItem(storageKey);
+    if (cacheKey) window.localStorage.removeItem(cacheKey);
     try {
       await signOut();
     } finally {
       setSigningOut(false);
     }
-  }, [signOut, signingOut]);
+  }, [signOut, signingOut, cacheKey]);
+
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => {
+      const requested = new URLSearchParams(window.location.search).get("view");
+      if (requested && nav.some((item) => item.id === requested)) {
+        setView(requested as View);
+      }
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
 
   useEffect(() => {
     // Defer client-only preferences until after hydration.
@@ -440,7 +455,7 @@ function ShopManager() {
       throw new Error(result.error || "Could not save this entry.");
     const normalized = normalizeData(result);
     setData(normalized);
-    window.localStorage.setItem(storageKey, JSON.stringify(normalized));
+    if (cacheKey) window.localStorage.setItem(cacheKey, JSON.stringify(normalized));
     setSyncState("synced");
     return { ...normalized, createdOrderId: result.createdOrderId };
   }
@@ -712,6 +727,7 @@ function ShopManager() {
           </div>
         </header>
 
+        <PwaUpdateNotice />
         {error ? (
           <div className="error-banner">
             <span>{error}</span>

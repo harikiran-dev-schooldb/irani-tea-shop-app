@@ -1,16 +1,72 @@
 {
   "name": "Irani Tea Shop Manager",
   "short_name": "Irani Tea",
-  "description": "Orders, menu, cashflow and expenses for your tea shop.",
+  "description": "Smart counter POS, ingredient inventory, recipe costs and profit reports for your tea shop.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "any",
-  "background_color": "#f0ece5",
-  "theme_color": "#180808",
-  "categories": ["business", "finance", "food"],
+  "background_color": "#f6f7fb",
+  "theme_color": "#70421f",
+  "categories": [
+    "business",
+    "finance",
+    "food"
+  ],
   "icons": [
-    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
-    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "id": "/",
+  "shortcuts": [
+    {
+      "name": "Open counter",
+      "short_name": "Counter",
+      "description": "Take a new order",
+      "url": "/?view=storefront",
+      "icons": [
+        {
+          "src": "/icons/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Ingredient inventory",
+      "short_name": "Inventory",
+      "description": "Check stock and purchases",
+      "url": "/?view=inventory",
+      "icons": [
+        {
+          "src": "/icons/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Profit reports",
+      "short_name": "Profit",
+      "description": "View business performance",
+      "url": "/?view=profit",
+      "icons": [
+        {
+          "src": "/icons/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    }
   ]
 }

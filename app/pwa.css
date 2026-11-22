@@ -1,0 +1,7 @@
+
+/* PWA lifecycle update notice */
+.app-shell .pwa-update { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 11px; margin: 14px clamp(18px,3.5vw,56px) 0; padding: 11px 14px; border: 1px solid #d7c5a8; border-radius: 12px; background: #fff7e9; color: #744c23; font-size: 12px; font-weight: 700; }
+.app-shell .pwa-update span, .app-shell .pwa-update button { display: inline-flex; align-items: center; gap: 8px; }
+.app-shell .pwa-update button { border: 1px solid #ad824f; border-radius: 9px; padding: 9px 12px; background: #8a5624; color: #fff; cursor: pointer; font-size: 11px; font-weight: 800; }
+.app-shell .pwa-update .pwa-dismiss { padding: 8px; border: 0; background: transparent; color: #956839; }
+.app-shell.theme-dark .pwa-update { border-color: #654f38; background: #30291f; color: #f0d3a3; }

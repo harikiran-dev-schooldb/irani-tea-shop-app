@@ -70,3 +70,11 @@ keyPassword=YOUR_KEY_PASSWORD
 ```
 
 Then run `cd android && ./gradlew testDebugUnitTest lintRelease bundleRelease`. For the GitHub release workflow, configure `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`, and `CLERK_PUBLISHABLE_KEY` as repository secrets.
+
+## PWA update and privacy model
+
+The standalone PWA now exposes **Counter**, **Inventory**, and **Profit reports** launcher shortcuts. Updated installations receive an in-app refresh banner when a new service worker activates.
+
+The service worker caches only public static assets and the generic offline page. It **never caches authenticated API responses, financial reports, session pages, or shop HTML**. An already-open authenticated tab can still show the most recent successful shop snapshot, stored per Clerk user ID in local storage. No financial edits are queued or replayed while offline, to prevent duplicate payments.
+
+For Android use the browser Install app option. On iPhone open the site in Safari, tap Share, and choose Add to Home Screen. Fresh offline launches show a privacy-safe reconnect page instead of reusing another staff member's authenticated page.
