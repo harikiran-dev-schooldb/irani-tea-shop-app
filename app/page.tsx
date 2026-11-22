@@ -433,7 +433,7 @@ function ShopManager() {
     setData(normalized);
     window.localStorage.setItem(storageKey, JSON.stringify(normalized));
     setSyncState("synced");
-    return normalized;
+    return { ...normalized, createdOrderId: result.createdOrderId };
   }
 
   function removeRecord(kind: "transaction" | "order", id: string) {
@@ -1211,6 +1211,8 @@ function Orders({
               <strong>{money(order.total)}</strong>
               <button
                 className={`status ${order.status}`}
+                disabled={order.status === "completed"}
+                title={order.status === "completed" ? "Order completed" : "Move to next stage"}
                 onClick={() =>
                   post({
                     kind: "order-status",
@@ -1283,8 +1285,18 @@ function MenuView({
   post: (payload: Record<string, unknown>) => Promise<ShopData>;
   open: () => void;
 }) {
+  const [menuError, setMenuError] = useState("");
+  async function updateMenu(payload: Record<string, unknown>) {
+    setMenuError("");
+    try {
+      await post(payload);
+    } catch (caught) {
+      setMenuError(caught instanceof Error ? caught.message : "Could not update the menu.");
+    }
+  }
   return (
     <div className="page-content">
+      {menuError ? <p className="inline-action-error" role="alert">{menuError}</p> : null}
       <div className="page-tools">
         <label className="search-field">
           <Search size={18} />
@@ -1323,7 +1335,7 @@ function MenuView({
                   type="checkbox"
                   checked={item.isAvailable}
                   onChange={(event) =>
-                    post({
+                    updateMenu({
                       kind: "menu-toggle",
                       id: item.id,
                       isAvailable: event.target.checked,
@@ -1335,12 +1347,7 @@ function MenuView({
               <div className="stock-stepper" aria-label={`${item.name} stock`}>
                 <button
                   onClick={() =>
-                    post({
-                      kind: "stock-update",
-                      id: item.id,
-                      stockQty: Math.max(0, item.stockQty - 1),
-                      lowStockThreshold: item.lowStockThreshold,
-                    })
+                    updateMenu({ kind: "stock-adjust", id: item.id, delta: -1 })
                   }
                 >
                   −
@@ -1348,12 +1355,7 @@ function MenuView({
                 <b>{item.stockQty}</b>
                 <button
                   onClick={() =>
-                    post({
-                      kind: "stock-update",
-                      id: item.id,
-                      stockQty: item.stockQty + 1,
-                      lowStockThreshold: item.lowStockThreshold,
-                    })
+                    updateMenu({ kind: "stock-adjust", id: item.id, delta: 1 })
                   }
                 >
                   +
@@ -1631,6 +1633,7 @@ function DailyClosePanel({
   const [openingCash, setOpeningCash] = useState(closing?.openingCash ?? 0);
   const [actualCash, setActualCash] = useState(closing?.actualCash ?? 0);
   const [saving, setSaving] = useState(false);
+  const [closingError, setClosingError] = useState("");
   const dayEntries = transactions.filter(
     (item) => dateKey(item.createdAt) === date,
   );
@@ -1644,6 +1647,7 @@ function DailyClosePanel({
   const difference = actualCash - expectedCash;
   async function closeDay() {
     setSaving(true);
+    setClosingError("");
     try {
       await post({
         kind: "daily-closing",
@@ -1652,6 +1656,8 @@ function DailyClosePanel({
         expectedCash,
         actualCash,
       });
+    } catch (caught) {
+      setClosingError(caught instanceof Error ? caught.message : "Could not close the day.");
     } finally {
       setSaving(false);
     }
@@ -1710,6 +1716,7 @@ function DailyClosePanel({
           </strong>
         </div>
       </div>
+      {closingError ? <p className="inline-action-error" role="alert">{closingError}</p> : null}
       <button
         className="primary close-day-button"
         disabled={saving}
@@ -1810,6 +1817,16 @@ function Counter({
 }) {
   const [basket, setBasket] = useState<MenuItem[]>([]);
   const [paymentMode, setPaymentMode] = useState<"cash" | "online">("cash");
+  const [counterSaving, setCounterSaving] = useState(false);
+  const checkoutInFlight = useRef(false);
+  const [counterError, setCounterError] = useState("");
+  const [counterQuery, setCounterQuery] = useState("");
+  const [counterCategory, setCounterCategory] = useState("All");
+  const categories = ["All", ...new Set(menu.map((item) => item.category))];
+  const visibleCounterItems = menu.filter((item) =>
+    (counterCategory === "All" || item.category === counterCategory) &&
+    `${item.name} ${item.category}`.toLowerCase().includes(counterQuery.trim().toLowerCase())
+  );
   const total = basket.reduce((sum, item) => sum + item.price, 0);
   const itemCount = (id: string) =>
     basket.filter((basketItem) => basketItem.id === id).length;
@@ -1822,35 +1839,50 @@ function Counter({
     setBasket((items) => items.filter((_, itemIndex) => itemIndex !== index));
   };
   async function finish() {
-    if (!total) return;
-    const result = await post({
-      kind: "order",
-      customer: "Walk-in",
-      total,
-      itemCount: basket.length,
-      paymentMode,
-      date: todayInput,
-      items: basketLines.map((item) => ({
-        id: item.id,
-        name: item.name,
-        quantity: item.quantity,
-        price: item.price,
-      })),
-    });
-    const order = result.orders[0];
-    showReceipt({
-      orderNo: order?.orderNo ?? 0,
-      createdAt: order?.createdAt ?? new Date().toISOString(),
-      paymentMode,
-      total,
-      items: basketLines.map((item) => ({
-        name: item.name,
-        quantity: item.quantity,
-        price: item.price,
-      })),
-    });
-    setBasket([]);
-    setPaymentMode("cash");
+    if (!total || checkoutInFlight.current) return;
+    checkoutInFlight.current = true;
+    setCounterSaving(true);
+    setCounterError("");
+    try {
+      const result = await post({
+        kind: "order",
+        customer: "Walk-in",
+        total,
+        itemCount: basket.length,
+        paymentMode,
+        date: todayInput,
+        items: basketLines.map((item) => ({
+          id: item.id,
+          name: item.name,
+          quantity: item.quantity,
+          price: item.price,
+        })),
+      });
+      const order = result.orders.find((entry) => entry.id === result.createdOrderId);
+      if (!order) {
+        // Saved successfully; never invite the cashier to retry the payment.
+        setCounterError("Order saved. Open Orders to review the new order.");
+      } else {
+        showReceipt({
+          orderNo: order.orderNo,
+          createdAt: order.createdAt,
+          paymentMode,
+          total,
+          items: basketLines.map((item) => ({
+            name: item.name,
+            quantity: item.quantity,
+            price: item.price,
+          })),
+        });
+      }
+      setBasket([]);
+      setPaymentMode("cash");
+    } catch (caught) {
+      setCounterError(caught instanceof Error ? caught.message : "Could not complete this order.");
+    } finally {
+      checkoutInFlight.current = false;
+      setCounterSaving(false);
+    }
   }
   return (
     <div className="counter-layout">
@@ -1862,14 +1894,29 @@ function Counter({
           </div>
           <span>{menu.length} available</span>
         </div>
+        <div className="counter-filters">
+          <label className="counter-search">
+            <Search size={17} />
+            <input value={counterQuery} onChange={(event) => setCounterQuery(event.target.value)} placeholder="Find a drink or snack…" aria-label="Search counter menu" />
+          </label>
+          <div className="counter-categories" role="group" aria-label="Filter menu by category">
+            {categories.map((category) => (
+              <button type="button" key={category} aria-pressed={counterCategory === category} className={counterCategory === category ? "active" : ""} onClick={() => setCounterCategory(category)}>{category}</button>
+            ))}
+          </div>
+        </div>
         <div className="counter-menu">
-          {menu.map((item) => {
+          {visibleCounterItems.map((item) => {
             const quantity = itemCount(item.id);
             return (
               <button
                 className={quantity ? "selected" : ""}
                 key={item.id}
-                onClick={() => setBasket((items) => [...items, item])}
+                disabled={counterSaving || quantity >= item.stockQty}
+                onClick={() => {
+                  setCounterError("");
+                  setBasket((items) => [...items, item]);
+                }}
               >
                 <span className="counter-item-top">
                   <span className="counter-item-icon">
@@ -1921,7 +1968,11 @@ function Counter({
                   <button
                     type="button"
                     aria-label={`Add one ${item.name}`}
-                    onClick={() => setBasket((items) => [...items, item])}
+                    disabled={counterSaving || item.quantity >= item.stockQty}
+                    onClick={() => {
+                      setCounterError("");
+                      setBasket((items) => [...items, item]);
+                    }}
                   >
                     +
                   </button>
@@ -1955,12 +2006,14 @@ function Counter({
             <Smartphone /> Online
           </button>
         </div>
+        {counterError ? <div className="counter-error" role="alert">{counterError}</div> : null}
         <button
           className="checkout-btn"
-          disabled={!basket.length}
-          onClick={finish}
+          disabled={!basket.length || counterSaving}
+          onClick={() => void finish()}
         >
-          <Check size={19} /> Complete order
+          {counterSaving ? <RefreshCw size={18} className="spinning" /> : <Check size={19} />}
+          {counterSaving ? "Saving order…" : "Complete order"}
         </button>
       </aside>
     </div>

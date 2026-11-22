@@ -235,3 +235,19 @@
 .app-shell.theme-dark .confirm-dialog p { color: #b1bfd2; }
 .app-shell.theme-dark .error-banner { background: #482a2a; color: #ffd4d1; border-color: #734747; }
 @media (prefers-reduced-motion: reduce) { .app-shell * { transition-duration: 0ms !important; animation-duration: .01ms !important; } }
+
+/* High-volume counter interactions */
+.app-shell .counter-filters { display: grid; gap: 10px; margin-bottom: 17px; }
+.app-shell .counter-search { display: flex; align-items: center; gap: 10px; min-height: 45px; padding: 0 13px; background: #fff; color: #8794a5; border: 1px solid #e1e6ee; border-radius: 12px; }
+.app-shell .counter-search:focus-within { border-color: #c29963; box-shadow: 0 0 0 3px rgba(195,153,99,.12); }
+.app-shell .counter-search input { flex: 1; min-width: 0; height: 42px; border: 0; background: transparent; color: #283445; outline: 0; font-size: 12px; }
+.app-shell .counter-categories { display: flex; gap: 7px; overflow-x: auto; padding-bottom: 3px; scrollbar-width: thin; }
+.app-shell .counter-categories button { flex: 0 0 auto; padding: 8px 13px; border: 1px solid #e2e7ee; border-radius: 999px; background: #fff; color: #6f7a8a; font-size: 11px; font-weight: 800; cursor: pointer; }
+.app-shell .counter-categories button.active { border-color: #9e6a32; background: #875220; color: #fff; }
+.app-shell .counter-menu button:disabled { cursor: not-allowed; opacity: .55; transform: none; }
+.app-shell .quantity-stepper button:disabled { cursor: not-allowed; opacity: .35; }
+.app-shell .counter-error, .app-shell .inline-action-error { margin: 10px 0; padding: 11px 13px; border: 1px solid #edb8b2; border-radius: 10px; background: #fff2f0; color: #9e3930; font-size: 12px; line-height: 1.5; }
+.app-shell.theme-dark .counter-search, .app-shell.theme-dark .counter-categories button { background: #202d41; border-color: #344359; color: #d2deeb; }
+.app-shell.theme-dark .counter-search input { color: #f0f5fb; }
+.app-shell.theme-dark .counter-categories button.active { background: #ab7538; color: #fff; }
+.app-shell.theme-dark .counter-error, .app-shell.theme-dark .inline-action-error { border-color: #874a46; background: #462a2c; color: #ffccc7; }
