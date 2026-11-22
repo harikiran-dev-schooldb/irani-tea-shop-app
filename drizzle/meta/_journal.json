@@ -29,6 +29,13 @@
       "when": 1792083365134,
       "tag": "0003_marvelous_black_tarantula",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1795350000000,
+      "tag": "0004_ingredient_profit",
+      "breakpoints": true
     }
   ]
 }

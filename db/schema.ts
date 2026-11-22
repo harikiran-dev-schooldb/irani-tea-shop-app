@@ -116,3 +116,67 @@ export const dailyClosings = pgTable(
     uniqueIndex("daily_closings_business_date_idx").on(table.businessDate),
   ],
 );
+
+/**
+ * Ingredient quantities are stored in small base units: ml, g or pieces.
+ * Unit costs use paise per base unit to avoid floating-point cost drift.
+ */
+export const ingredients = pgTable(
+  "ingredients",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    name: text("name").notNull(),
+    unit: text("unit").notNull(),
+    stockQty: integer("stock_qty").notNull().default(0),
+    reorderAt: integer("reorder_at").notNull().default(0),
+    unitCostPaise: integer("unit_cost_paise").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [uniqueIndex("ingredients_name_unique").on(table.name)],
+);
+
+export const recipeIngredients = pgTable(
+  "recipe_ingredients",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    menuItemId: uuid("menu_item_id").notNull().references(() => menuItems.id, { onDelete: "cascade" }),
+    ingredientId: uuid("ingredient_id").notNull().references(() => ingredients.id, { onDelete: "restrict" }),
+    quantity: integer("quantity").notNull(),
+  },
+  (table) => [
+    uniqueIndex("recipe_ingredients_item_ingredient_unique").on(table.menuItemId, table.ingredientId),
+  ],
+);
+
+export const ingredientPurchases = pgTable(
+  "ingredient_purchases",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    ingredientId: uuid("ingredient_id").notNull().references(() => ingredients.id, { onDelete: "restrict" }),
+    quantity: integer("quantity").notNull(),
+    totalCostPaise: integer("total_cost_paise").notNull(),
+    supplier: text("supplier").notNull().default(""),
+    note: text("note").notNull().default(""),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("ingredient_purchases_created_at_idx").on(table.createdAt)],
+);
+
+export const ingredientMovements = pgTable(
+  "ingredient_movements",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    ingredientId: uuid("ingredient_id").notNull().references(() => ingredients.id, { onDelete: "restrict" }),
+    orderId: uuid("order_id").references(() => orders.id, { onDelete: "cascade" }),
+    quantityChange: integer("quantity_change").notNull(),
+    unitCostPaise: integer("unit_cost_paise").notNull(),
+    reason: text("reason").notNull(),
+    note: text("note").notNull().default(""),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("ingredient_movements_ingredient_idx").on(table.ingredientId),
+    index("ingredient_movements_order_idx").on(table.orderId),
+    index("ingredient_movements_created_at_idx").on(table.createdAt),
+  ],
+);
