@@ -27,6 +27,14 @@ The menu seeds itself with the standard Irani Tea items the first time the empty
 - `npm run db:generate` — generate migrations after schema changes
 - `npm run db:migrate` — apply migrations with `DIRECT_DATABASE_URL` (falling back to `DATABASE_URL` locally)
 
+## API security and counter integrity
+
+The shop requires a valid, authorised Clerk session. A caller-provided `oai-authenticated-user-id` header alone no longer grants access. A dedicated Sites integration must set the server-only `SHOP_SITES_AUTH_SECRET` and have its **trusted server ingress** provide `x-shop-sites-secret`. Never put this secret in browser or Android code.
+
+Counter checkout now verifies prices, stock and item counts server-side. The order, payment, item lines and stock deductions are saved as one Neon HTTP batch transaction so failures roll back together. A relative `stock-adjust` action avoids lost updates when adding or subtracting menu stock.
+
+**Reporting limitation:** The current API still returns a bounded recent history (250 orders / 500 transactions); historical all-time screen totals should not be used for accounting without a full-history report/export.
+
 ## PWA behavior
 
 The app includes an install manifest, maskable 192px and 512px icons, iOS web-app metadata, safe-area-aware mobile navigation, and a service worker. The application shell and most recently loaded shop data remain readable offline; writes are intentionally disabled offline to avoid conflicting financial records.

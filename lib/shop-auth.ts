@@ -29,9 +29,18 @@ const SCHOOL_ADMIN_ROLES = new Set(["SUPER_ADMIN", "SCHOOL_ADMIN"]);
 export async function authorizeShopRequest(
   request: Request,
 ): Promise<ShopIdentity | NextResponse> {
+  // The identity header is spoofable on a public endpoint. Only trust it
+  // when a separately authenticated Sites ingress also supplies a server secret.
   const sitesUserId = request.headers.get("oai-authenticated-user-id")?.trim();
-  if (sitesUserId) {
-    return { source: "sites", userId: sitesUserId };
+  const expectedSecret = process.env.SHOP_SITES_AUTH_SECRET?.trim();
+  const receivedSecret = request.headers.get("x-shop-sites-secret")?.trim();
+  if (sitesUserId && expectedSecret && receivedSecret &&
+      receivedSecret.length === expectedSecret.length) {
+    let mismatch = 0;
+    for (let index = 0; index < expectedSecret.length; index++) {
+      mismatch |= expectedSecret.charCodeAt(index) ^ receivedSecret.charCodeAt(index);
+    }
+    if (mismatch === 0) return { source: "sites", userId: sitesUserId };
   }
 
   const requestHost = new URL(request.url).hostname;

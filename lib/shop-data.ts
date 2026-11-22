@@ -4,7 +4,7 @@ export type OrderItem = { id: string; orderId: string; menuItemId: string | null
 export type PaymentMode = "cash" | "online";
 export type Transaction = { id: string; type: "sale" | "expense"; category: string; amount: number; note: string; paymentMode: PaymentMode; createdAt: string };
 export type DailyClosing = { id: string; businessDate: string; openingCash: number; expectedCash: number; actualCash: number; difference: number; closedAt: string };
-export type ShopData = { menu: MenuItem[]; orders: Order[]; orderItems: OrderItem[]; transactions: Transaction[]; closings: DailyClosing[] };
+export type ShopData = { menu: MenuItem[]; orders: Order[]; orderItems: OrderItem[]; transactions: Transaction[]; closings: DailyClosing[]; createdOrderId?: string };
 
 export const starterMenu = [
   { name: "Irani Tea", category: "Tea", price: 15 },

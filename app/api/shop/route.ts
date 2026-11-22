@@ -1,5 +1,6 @@
-import { desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { NextResponse } from "next/server";
+import { randomUUID } from "node:crypto";
 
 import { getDb } from "@/db";
 import {
@@ -98,6 +99,7 @@ export async function POST(request: Request) {
     const payload = await request.json() as Record<string, unknown>;
     const kind = cleanText(payload.kind);
     const db = getDb();
+    let createdOrderId: string | undefined;
 
     if (kind === "menu") {
       const name = cleanText(payload.name);
@@ -127,6 +129,17 @@ export async function POST(request: Request) {
           ),
         })
         .where(eq(menuItems.id, id));
+    } else if (kind === "stock-adjust") {
+      const id = cleanText(payload.id);
+      const delta = Number(payload.delta);
+      if (!id || !Number.isInteger(delta) || ![-1, 1].includes(delta)) {
+        throw new Error("Choose a valid stock adjustment.");
+      }
+      const [updated] = await db.update(menuItems)
+        .set({ stockQty: sql`${menuItems.stockQty} + ${delta}` })
+        .where(and(eq(menuItems.id, id), sql`${menuItems.stockQty} + ${delta} >= 0`))
+        .returning({ id: menuItems.id });
+      if (!updated) throw new Error("Not enough stock. Refresh menu quantities and try again.");
     } else if (kind === "sale" || kind === "expense" || kind === "transaction") {
       const type = payload.type === "expense" || kind === "expense" ? "expense" : "sale";
       await db.insert(transactions).values({
@@ -138,48 +151,74 @@ export async function POST(request: Request) {
         createdAt: transactionDate(payload.date, payload.time),
       });
     } else if (kind === "order") {
-      const total = positiveNumber(payload.total, "Total");
-      const itemCount = positiveNumber(payload.itemCount, "Item count");
       const customer = cleanText(payload.customer, "Walk-in") || "Walk-in";
       const paidBy = paymentMode(payload.paymentMode);
       const createdAt = transactionDate(payload.date, payload.time) ?? new Date();
-      const [newOrder] = await db
-        .insert(orders)
-        .values({ customer, itemCount, total, createdAt })
-        .returning();
-      await db.insert(transactions).values({
-        type: "sale",
-        category: "Orders",
-        amount: total,
-        note: `Order #${newOrder.orderNo}`,
-        paymentMode: paidBy,
-        orderId: newOrder.id,
-        createdAt,
+      const rawLines = Array.isArray(payload.items) ? payload.items : [];
+      if (rawLines.length > 100) throw new Error("An order can contain at most 100 different menu lines.");
+      const lines = rawLines.map((entry) => {
+        if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
+          throw new Error("Invalid order item.");
+        }
+        const item = entry as Record<string, unknown>;
+        const menuItemId = cleanText(item.id);
+        if (!menuItemId) throw new Error("Select a valid menu item.");
+        return { menuItemId, quantity: positiveNumber(item.quantity, "Quantity") };
       });
-      const lines = Array.isArray(payload.items)
-        ? payload.items
-            .map((line) => line as Record<string, unknown>)
-            .map((line) => ({
-              menuItemId: cleanText(line.id) || null,
-              name: cleanText(line.name, "Menu item"),
-              quantity: positiveNumber(line.quantity, "Quantity"),
-              unitPrice: positiveNumber(line.price, "Price"),
-            }))
+      const quantities = new Map<string, number>();
+      for (const line of lines) {
+        quantities.set(line.menuItemId, (quantities.get(line.menuItemId) ?? 0) + line.quantity);
+      }
+      const selectedMenu = quantities.size
+        ? await db.select().from(menuItems).where(inArray(menuItems.id, [...quantities.keys()]))
         : [];
-      if (lines.length) {
-        await db.insert(orderItems).values(
-          lines.map((line) => ({ ...line, orderId: newOrder.id })),
-        );
-        for (const line of lines) {
-          if (!line.menuItemId) continue;
-          await db
-            .update(menuItems)
-            .set({
-              stockQty: sql`greatest(0, ${menuItems.stockQty} - ${line.quantity})`,
-            })
-            .where(eq(menuItems.id, line.menuItemId));
+      const menuById = new Map(selectedMenu.map((item) => [item.id, item]));
+      for (const [id, quantity] of quantities) {
+        const item = menuById.get(id);
+        if (!item || !item.isAvailable) throw new Error("A menu item is no longer available. Refresh the menu.");
+        if (item.stockQty < quantity) {
+          throw new Error(`Not enough ${item.name} in stock (available: ${item.stockQty}).`);
         }
       }
+      const verifiedLines = lines.map((line) => {
+        const item = menuById.get(line.menuItemId)!;
+        return { ...line, name: item.name, unitPrice: item.price };
+      });
+      const total = positiveNumber(payload.total, "Total");
+      const itemCount = positiveNumber(payload.itemCount, "Item count");
+      if (verifiedLines.length) {
+        const actualCount = verifiedLines.reduce((sum, line) => sum + line.quantity, 0);
+        const actualTotal = verifiedLines.reduce((sum, line) => sum + line.quantity * line.unitPrice, 0);
+        if (itemCount !== actualCount || total !== actualTotal) {
+          throw new Error("The menu price or item quantity changed. Refresh your order and try again.");
+        }
+      }
+      const orderId = randomUUID();
+      // Neon HTTP batch is atomic: order, payment, items, and inventory succeed
+      // together. Concurrent stock shortages fail the final checks and roll back.
+      await db.batch([
+        db.insert(orders).values({ id: orderId, customer, itemCount, total, createdAt }),
+        db.insert(transactions).values({
+          type: "sale", category: "Orders", amount: total,
+          note: sql`'Order #' || (select ${orders.orderNo} from ${orders} where ${orders.id} = ${orderId})`,
+          paymentMode: paidBy, orderId, createdAt,
+        }),
+        ...(verifiedLines.length
+          ? [db.insert(orderItems).values(verifiedLines.map((line) => ({ ...line, orderId })))]
+          : []),
+        ...[...quantities].map(([id, quantity]) =>
+          db.update(menuItems)
+            .set({ stockQty: sql`${menuItems.stockQty} - ${quantity}` })
+            .where(eq(menuItems.id, id)),
+        ),
+        ...[...quantities].map(([id]) =>
+          db.execute(sql`select 1 / (case when exists (
+            select 1 from ${menuItems}
+            where ${menuItems.id} = ${id} and ${menuItems.stockQty} >= 0
+          ) then 1 else 0 end) as inventory_valid`),
+        ),
+      ]);
+      createdOrderId = orderId;
     } else if (kind === "order-status") {
       const status = cleanText(payload.status);
       if (!(["preparing", "ready", "completed"] as string[]).includes(status)) throw new Error("Invalid order status.");
@@ -209,15 +248,15 @@ export async function POST(request: Request) {
           .select()
           .from(orderItems)
           .where(eq(orderItems.orderId, entry.orderId));
-        for (const line of lines) {
-          if (!line.menuItemId) continue;
-          await db
-            .update(menuItems)
-            .set({ stockQty: sql`${menuItems.stockQty} + ${line.quantity}` })
-            .where(eq(menuItems.id, line.menuItemId));
-        }
-        await db.delete(transactions).where(eq(transactions.id, id));
-        await db.delete(orders).where(eq(orders.id, entry.orderId));
+        await db.batch([
+          ...lines.filter((line) => Boolean(line.menuItemId)).map((line) =>
+            db.update(menuItems)
+              .set({ stockQty: sql`${menuItems.stockQty} + ${line.quantity}` })
+              .where(eq(menuItems.id, line.menuItemId!)),
+          ),
+          db.delete(transactions).where(eq(transactions.id, id)),
+          db.delete(orders).where(eq(orders.id, entry.orderId!)),
+        ]);
       } else {
         await db.delete(transactions).where(eq(transactions.id, id));
       }
@@ -250,15 +289,15 @@ export async function POST(request: Request) {
         .select()
         .from(orderItems)
         .where(eq(orderItems.orderId, id));
-      for (const line of lines) {
-        if (!line.menuItemId) continue;
-        await db
-          .update(menuItems)
-          .set({ stockQty: sql`${menuItems.stockQty} + ${line.quantity}` })
-          .where(eq(menuItems.id, line.menuItemId));
-      }
-      await db.delete(transactions).where(eq(transactions.orderId, id));
-      await db.delete(orders).where(eq(orders.id, id));
+      await db.batch([
+        ...lines.filter((line) => Boolean(line.menuItemId)).map((line) =>
+          db.update(menuItems)
+            .set({ stockQty: sql`${menuItems.stockQty} + ${line.quantity}` })
+            .where(eq(menuItems.id, line.menuItemId!)),
+        ),
+        db.delete(transactions).where(eq(transactions.orderId, id)),
+        db.delete(orders).where(eq(orders.id, id)),
+      ]);
     } else if (kind === "daily-closing") {
       const businessDate = cleanText(payload.businessDate);
       if (!/^\d{4}-\d{2}-\d{2}$/.test(businessDate))
@@ -286,7 +325,7 @@ export async function POST(request: Request) {
       throw new Error("Unknown shop action.");
     }
 
-    return NextResponse.json(await readShop());
+    return NextResponse.json({ ...(await readShop()), createdOrderId });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Could not save this entry.";
     console.error("Could not update shop data", error);
