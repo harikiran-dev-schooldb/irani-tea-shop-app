@@ -1,0 +1,237 @@
+/* Irani Tea — SchoolDB-inspired premium workspace.
+   Scoped to the shop shell so sign-in and receipts retain their own presentation. */
+.app-shell {
+  --ink: #1f2937;
+  --coffee: #89521f;
+  --espresso: #40220d;
+  --brown: #80491f;
+  --brown-2: #966331;
+  --tea: #b87936;
+  --gold: #bd853f;
+  --gold-light: #f6d79a;
+  --paper-light: #fff;
+  --line: rgba(100,116,139,.17);
+  --shadow: 0 16px 40px rgba(15,23,42,.065);
+  --display: "DM Sans", ui-sans-serif, system-ui, sans-serif;
+  background: #f5f6fa;
+  color: var(--ink);
+}
+.app-shell .workspace {
+  background: radial-gradient(ellipse at 88% 0%, rgba(212,164,91,.07), transparent 32%), #f6f7fb;
+}
+.app-shell .sidebar {
+  border: 1px solid #e7eaf0;
+  background: linear-gradient(165deg, #fff, #fafbfe);
+  box-shadow: 0 18px 48px rgba(15,23,42,.075);
+  border-radius: 20px;
+  overflow-y: auto;
+}
+.app-shell .shop-brand {
+  background: linear-gradient(125deg, #fff 12%, #fcf3e7);
+  border-color: #ebdfcb;
+  box-shadow: 0 7px 22px rgba(100,65,28,.055);
+}
+.app-shell .shop-brand strong { font-family: var(--display); font-size: 17px; font-weight: 800; letter-spacing: -.025em; }
+.app-shell .shop-brand small { color: #897e70; }
+.app-shell .brand-cup { width: 46px; height: 46px; flex: 0 0 46px; border: 0; box-shadow: 0 7px 16px rgba(53,27,10,.14); }
+.app-shell .sidebar-toggle { display: flex; align-items: center; justify-content: flex-end; gap: 7px; width: fit-content; min-height: 33px; margin: 11px 2px -6px auto; padding: 6px 9px; border: 1px solid #e6e9ef; border-radius: 9px; background: #fff; color: #737b8a; cursor: pointer; font-size: 11px; font-weight: 700; transition: background .2s ease; }
+.app-shell .sidebar-toggle:hover { background: #f7f3ed; color: #875220; }
+.app-shell .side-nav { gap: 4px; padding-top: 30px; }
+.app-shell .side-nav::before { top: 9px; font-size: 10px; letter-spacing: .11em; color: #97a0ae; }
+.app-shell .side-nav button { min-height: 45px; gap: 11px; color: #626c7c; border-radius: 11px; font-size: 12px; font-weight: 700; }
+.app-shell .side-nav button svg { flex-shrink: 0; }
+.app-shell .side-nav button:hover { color: #795027; background: #faf2e7; border-color: #f0e2cc; }
+.app-shell .side-nav button.active { color: #fff; background: linear-gradient(120deg, #a36b31, #714019); border-color: #975b2e; box-shadow: 0 7px 18px rgba(129,72,27,.19); }
+.app-shell .side-nav button.active b { background: #fff5dd; color: #794615; }
+.app-shell .shop-status { background: #faf8f3; border-color: #ebe9e0; }
+.app-shell .owner-card { background: #f7f8fb; border-color: #e9ebf2; }
+.app-shell .owner-card strong { color: #374151; }
+.app-shell .settings-row { border-top-color: #e7eaf0; color: #a33a30; font-weight: 700; }
+.app-shell .settings-row:hover { background: #fff1ef; color: #b63830; }
+.app-shell .topbar { min-height: 76px; padding-top: 11px; padding-bottom: 11px; background: rgba(255,255,255,.86); border-bottom: 1px solid #e7eaf0; box-shadow: 0 8px 26px rgba(15,23,42,.035); backdrop-filter: blur(22px); }
+.app-shell .topbar h1 { color: #222b39; font-family: var(--display); font-size: 19px; font-weight: 800; letter-spacing: -.035em; line-height: 1.35; }
+.app-shell .topbar p { color: #8e97a5; font-size: 10px; font-weight: 700; letter-spacing: .035em; text-transform: uppercase; }
+.app-shell .top-actions { gap: 7px; }
+.app-shell .sync-state { color: #755225; background: #fbf4e8; border-color: #f2e1c7; }
+.app-shell .sync-state.offline { color: #9d3939; background: #fff1f1; border-color: #f1c8c8; }
+.app-shell .sync-state.local { color: #856329; background: #f7f0e2; border-color: #e9dfcc; }
+.app-shell .search-button, .app-shell .theme-button, .app-shell .refresh-button { width: auto; min-width: 40px; height: 40px; display: inline-flex; align-items: center; justify-content: center; gap: 10px; padding: 0 11px; border: 1px solid #e6e9ef; background: #fff; color: #657080; border-radius: 11px; cursor: pointer; transition: background .2s, border-color .2s, color .2s; }
+.app-shell .search-button:hover, .app-shell .theme-button:hover, .app-shell .refresh-button:hover { background: #f9f4ed; color: #805024; border-color: #ead5b5; }
+.app-shell .search-shortcut { font-size: 10px; font-weight: 700; color: #99a2b0; white-space: nowrap; }
+.app-shell .quick-order, .app-shell .primary { border-color: #835024; background: linear-gradient(130deg, #a2692d, #75421b); color: #fff; box-shadow: 0 7px 16px rgba(132,75,30,.15); border-radius: 11px; font-size: 12px; }
+.app-shell .secondary { border-color: #d7dce5; border-radius: 11px; background: #fff; color: #556273; }
+.app-shell .profile-menu-shell { position: relative; flex: 0 0 auto; }
+.app-shell .profile-trigger { height: 43px; max-width: 245px; display: flex; align-items: center; gap: 9px; padding: 4px 8px 4px 5px; background: #fff; border: 1px solid #e5e8ef; border-radius: 12px; cursor: pointer; text-align: left; }
+.app-shell .profile-trigger:hover, .app-shell .profile-trigger[aria-expanded="true"] { background: #f7f8fa; border-color: #dcc4a7; }
+.app-shell .profile-avatar { width: 33px; height: 33px; display: grid; place-items: center; flex: 0 0 33px; border-radius: 10px; color: #8b5428; background: #f9e9d1; }
+.app-shell .profile-trigger-copy { min-width: 0; display: grid; gap: 2px; }
+.app-shell .profile-trigger-copy strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #374151; font-size: 11px; font-weight: 800; }
+.app-shell .profile-trigger-copy small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #8993a3; font-size: 10px; text-transform: capitalize; }
+.app-shell .profile-chevron { flex-shrink: 0; color: #9ca3af; }
+.app-shell .profile-dropdown { position: absolute; z-index: 65; top: calc(100% + 10px); right: 0; width: min(255px, 85vw); padding: 7px; border: 1px solid #e3e7ee; border-radius: 15px; background: #fff; box-shadow: 0 20px 50px rgba(15,23,42,.15); }
+.app-shell .profile-dropdown-user { display: grid; gap: 3px; padding: 12px; border-bottom: 1px solid #ecedf1; }
+.app-shell .profile-dropdown-user strong { color: #303a49; font-size: 12px; overflow-wrap: anywhere; }
+.app-shell .profile-dropdown-user small { color: #858d9a; font-size: 11px; text-transform: capitalize; }
+.app-shell .profile-dropdown button { width: 100%; display: flex; align-items: center; gap: 10px; padding: 12px; background: transparent; color: #566172; border: 0; border-radius: 9px; text-align: left; cursor: pointer; font-size: 12px; font-weight: 700; }
+.app-shell .profile-dropdown button:hover { background: #f6f7fa; }
+.app-shell .profile-dropdown button:last-child { color: #b0473c; }
+.app-shell .profile-dropdown button:disabled { opacity: .5; cursor: wait; }
+.app-shell .page-content, .app-shell .counter-layout { padding-top: 26px; }
+.app-shell .welcome { min-height: 225px; border-radius: 22px; border-color: rgba(176,133,76,.32); box-shadow: 0 16px 36px rgba(52,30,10,.11); }
+.app-shell .welcome::after { border-color: rgba(255,255,255,.18); }
+.app-shell .welcome h2 { font-family: var(--display); font-weight: 800; font-size: clamp(27px,3vw,39px); letter-spacing: -.04em; }
+.app-shell .metric-grid { gap: 14px; margin: 18px 0 22px; }
+.app-shell .metric, .app-shell .panel, .app-shell .menu-item, .app-shell .daily-close, .app-shell .payment-summary article, .app-shell .daily-report, .app-shell .expense-card, .app-shell .basket { background: #fff; border: 1px solid #e7eaf0; border-radius: 17px; box-shadow: 0 9px 26px rgba(15,23,42,.04); }
+.app-shell .metric { padding: 20px; }
+.app-shell .metric > span { color: #788396; font-size: 11px; font-weight: 700; }
+.app-shell .metric > strong { color: #1f2937; font-family: var(--display); font-size: 27px; font-weight: 800; letter-spacing: -.035em; }
+.app-shell .metric > small { color: #8f98a6; }
+.app-shell .metric-icon { border-radius: 11px; }
+.app-shell .section-title-row h2, .app-shell .panel-head h3, .app-shell .page-tools h3 { font-family: var(--display); font-size: 20px; font-weight: 800; letter-spacing: -.025em; }
+.app-shell .panel-head { border-bottom-color: #eef0f4; }
+.app-shell .panel-head span { color: #8993a2; font-weight: 800; }
+.app-shell .table-head { background: #f7f8fb; color: #778293; border-bottom: 1px solid #e6eaf0; }
+.app-shell .table-row { border-bottom: 1px solid #eff1f5; transition: background .15s; }
+.app-shell .table-row:hover { background: #fcfaf7; }
+.app-shell .status, .app-shell .status-dot { border-radius: 999px; font-weight: 800; }
+.app-shell .search-field { background: #fff; border: 1px solid #dde2ea; border-radius: 12px; }
+.app-shell .search-field input { background: transparent; }
+.app-shell .menu-item { transition: transform .2s ease, box-shadow .2s ease; }
+.app-shell .menu-item:hover { transform: translateY(-2px); box-shadow: 0 15px 30px rgba(15,23,42,.07); }
+.app-shell .counter-menu button { background: linear-gradient(150deg, #fff, #faf5ec); border: 1px solid #e8e0d4; border-radius: 17px; box-shadow: 0 10px 24px rgba(15,23,42,.04); }
+.app-shell .counter-menu button.selected { border-color: #ac7738; }
+.app-shell .counter-item-name { font-family: var(--display); font-weight: 800; }
+.app-shell .report-toolbar, .app-shell .page-date-filter { border-radius: 14px; }
+.app-shell .entry-modal, .app-shell .receipt-modal { background: #fff; border: 1px solid #e7eaf0; border-radius: 19px; box-shadow: 0 24px 70px rgba(15,23,42,.18); }
+.app-shell .entry-modal input, .app-shell .entry-modal select { min-height: 44px; padding: 10px 12px; background: #fff; border: 1px solid #dce2ea; border-radius: 10px; transition: border-color .15s, box-shadow .15s; }
+.app-shell .entry-modal input:focus, .app-shell .entry-modal select:focus { border-color: #c08c52; box-shadow: 0 0 0 3px rgba(192,140,82,.13); }
+.app-shell .modal-head { background: linear-gradient(120deg,#7b471e,#4e2b13); }
+.app-shell .modal-submit, .app-shell .checkout-btn { background: linear-gradient(125deg,#a36a2c,#75411c); border-radius: 11px; }
+.app-shell .row-actions button { border-radius: 9px; background: #f7f8fa; border-color: #e4e8ef; }
+.app-shell .row-actions button:hover { background: #f3e5d5; }
+.app-shell .table-pagination { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 13px 18px; border-top: 1px solid #e8ecf2; color: #86909d; font-size: 11px; font-weight: 600; }
+.app-shell .table-pagination > div { display: flex; align-items: center; gap: 10px; }
+.app-shell .table-pagination strong { color: #657080; font-weight: 700; }
+.app-shell .table-pagination button { min-height: 33px; padding: 0 11px; border: 1px solid #dde3eb; border-radius: 9px; background: #fff; color: #596678; cursor: pointer; font-weight: 700; }
+.app-shell .table-pagination button:hover:not(:disabled) { background: #f7f0e8; border-color: #e5c9a5; color: #75451f; }
+.app-shell .table-pagination button:disabled { opacity: .4; cursor: not-allowed; }
+.app-shell .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+.app-shell .command-backdrop { position: fixed; z-index: 90; inset: 0; display: flex; align-items: flex-start; justify-content: center; padding: min(14vh,110px) 16px 20px; background: rgba(17,24,39,.52); backdrop-filter: blur(6px); }
+.app-shell .command-dialog { width: min(610px,100%); max-height: min(72vh,650px); display: flex; flex-direction: column; overflow: hidden; border: 1px solid #e1e6ee; border-radius: 20px; background: #fff; box-shadow: 0 35px 100px rgba(7,14,31,.26); }
+.app-shell .command-search { display: flex; align-items: center; gap: 13px; padding: 16px 18px; border-bottom: 1px solid #edf0f4; color: #8590a0; }
+.app-shell .command-search input { flex: 1; min-width: 0; padding: 6px 0; border: 0; background: transparent; color: #263345; outline: 0; font-size: 15px; }
+.app-shell .command-search button { display: grid; place-items: center; width: 29px; height: 29px; border: 0; border-radius: 8px; background: #f3f5f8; color: #818a98; cursor: pointer; }
+.app-shell .command-results { min-height: 120px; overflow-y: auto; padding: 10px; }
+.app-shell .command-section + .command-section { border-top: 1px solid #f0f1f4; margin-top: 9px; padding-top: 9px; }
+.app-shell .command-section p { margin: 9px 10px; color: #9aa4b2; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .12em; }
+.app-shell .command-section button { width: 100%; display: flex; align-items: center; gap: 12px; padding: 10px; background: transparent; border: 0; border-radius: 11px; text-align: left; cursor: pointer; color: #384557; }
+.app-shell .command-section button:hover, .app-shell .command-section button:focus-visible { background: #faf3e9; outline: 0; }
+.app-shell .command-result-icon { width: 38px; height: 38px; display: grid; place-items: center; flex-shrink: 0; border-radius: 11px; background: #f6ead9; color: #9b652d; }
+.app-shell .command-section button > span:nth-child(2) { min-width: 0; flex: 1; display: grid; gap: 4px; }
+.app-shell .command-section button strong { font-size: 12px; font-weight: 800; }
+.app-shell .command-section button small { color: #8e98a6; font-size: 11px; }
+.app-shell .command-result-arrow { color: #acb3bd; }
+.app-shell .command-empty { padding: 36px 16px; text-align: center; color: #8894a4; font-size: 12px; }
+.app-shell .command-footer { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 17px; background: #fafbfd; border-top: 1px solid #eff1f4; color: #919aa7; font-size: 10px; }
+.app-shell .command-footer kbd { display: inline-block; min-width: 18px; margin: 0 2px; padding: 3px 5px; border: 1px solid #dfe4eb; border-radius: 5px; background: #fff; text-align: center; font: inherit; }
+.app-shell .command-footer button { display: flex; align-items: center; gap: 6px; padding: 8px 11px; border-radius: 9px; border: 0; background: #efe0ce; color: #795025; font-size: 11px; font-weight: 800; cursor: pointer; }
+.app-shell .confirm-dialog { width: min(440px,100%); padding: 28px; border: 1px solid #e3e8ef; border-radius: 20px; background: #fff; box-shadow: 0 24px 70px rgba(0,0,0,.18); }
+.app-shell .confirm-dialog-icon { display: grid; place-items: center; width: 43px; height: 43px; border-radius: 12px; background: #fff1ee; color: #c04535; }
+.app-shell .confirm-dialog h2 { margin: 17px 0 8px; color: #222e3d; font-size: 19px; font-weight: 800; letter-spacing: -.025em; }
+.app-shell .confirm-dialog p { color: #697589; font-size: 12px; line-height: 1.6; }
+.app-shell .confirm-dialog .confirm-error { color: #be3d35; font-weight: 700; }
+.app-shell .confirm-dialog-actions { display: flex; justify-content: flex-end; gap: 9px; margin-top: 22px; }
+.app-shell .danger-button { min-height: 42px; padding: 0 15px; border: 1px solid #b93632; border-radius: 11px; background: #be433d; color: #fff; font-size: 12px; font-weight: 800; cursor: pointer; }
+.app-shell .danger-button:disabled { opacity: .5; cursor: wait; }
+@media (min-width: 901px) {
+  .app-shell.is-collapsed { grid-template-columns: 92px minmax(0,1fr); }
+  .app-shell.is-collapsed .sidebar { margin-left: 8px; margin-right: 8px; padding: 8px; }
+  .app-shell.is-collapsed .shop-brand { justify-content: center; padding: 6px; }
+  .app-shell.is-collapsed .brand-cup { width: 42px; height: 42px; flex-basis: 42px; }
+  .app-shell.is-collapsed .shop-brand > div, .app-shell.is-collapsed .side-nav button span, .app-shell.is-collapsed .side-nav button b, .app-shell.is-collapsed .side-nav::before, .app-shell.is-collapsed .shop-status, .app-shell.is-collapsed .owner-card > div, .app-shell.is-collapsed .settings-label, .app-shell.is-collapsed .sidebar-toggle span { display: none; }
+  .app-shell.is-collapsed .sidebar-toggle { margin: 10px auto 5px; }
+  .app-shell.is-collapsed .side-nav { padding-top: 3px; }
+  .app-shell.is-collapsed .side-nav button, .app-shell.is-collapsed .settings-row { justify-content: center; padding: 11px 8px; }
+  .app-shell.is-collapsed .owner-card { justify-content: center; padding: 8px 0; }
+}
+@media (max-width: 1200px) {
+  .app-shell .search-shortcut, .app-shell .profile-trigger-copy, .app-shell .profile-chevron { display: none; }
+  .app-shell .profile-trigger { padding: 4px; }
+}
+@media (max-width: 900px) {
+  .app-shell .sidebar { border-radius: 0 20px 20px 0; margin: 0; }
+  .app-shell .sidebar-toggle { display: none; }
+  .app-shell .topbar { min-height: 69px; }
+  .app-shell .topbar p { display: none; }
+  .app-shell .topbar h1 { font-size: 17px; }
+  .app-shell .search-button { display: inline-flex; }
+  .app-shell .quick-order::after { content: none; }
+  .app-shell .quick-order { font-size: 0; padding: 0 11px; }
+  .app-shell .quick-order svg { margin: 0; }
+  .app-shell .page-content, .app-shell .counter-layout { padding-top: 18px; }
+  .app-shell .metric-grid { gap: 9px; }
+  .app-shell .metric { padding: 15px; }
+  .app-shell .metric > strong { font-size: 22px; }
+}
+@media (max-width: 520px) {
+  .app-shell .topbar { gap: 8px; }
+  .app-shell .top-actions { gap: 5px; }
+  .app-shell .theme-button, .app-shell .search-button, .app-shell .refresh-button { min-width: 36px; width: 36px; height: 38px; padding: 0; }
+  .app-shell .quick-order { min-height: 38px; padding: 0 9px; }
+  .app-shell .profile-trigger { height: 38px; }
+  .app-shell .profile-avatar { width: 28px; height: 28px; flex-basis: 28px; }
+  .app-shell .welcome { min-height: 204px; padding: 23px; }
+  .app-shell .welcome h2 { font-size: 27px; }
+  .app-shell .command-backdrop { padding-top: max(30px,env(safe-area-inset-top)); }
+  .app-shell .command-footer span { display: none; }
+  .app-shell .command-footer { justify-content: flex-end; }
+}
+.app-shell.theme-dark {
+  --ink: #edf1f7; --coffee: #c18c50; --espresso: #8c5829; --brown: #deb37d; --brown-2: #d3a66e;
+  --line: rgba(207,220,240,.12); --paper-light: #182235; --shadow: 0 18px 45px rgba(0,0,0,.23);
+  color: #edf1f7; background: #0c1423;
+}
+.app-shell.theme-dark .workspace { background: radial-gradient(ellipse at 78% 0%,rgba(136,86,30,.1),transparent 34%),#0e1727; }
+.app-shell.theme-dark .sidebar, .app-shell.theme-dark .topbar { background: #121d2f; border-color: #2b384c; box-shadow: 0 14px 35px rgba(0,0,0,.13); }
+.app-shell.theme-dark .topbar { background: rgba(17,28,45,.93); }
+.app-shell.theme-dark .shop-brand, .app-shell.theme-dark .shop-status, .app-shell.theme-dark .owner-card { background: #1a273a; border-color: #344055; }
+.app-shell.theme-dark .shop-brand strong, .app-shell.theme-dark .owner-card strong, .app-shell.theme-dark .topbar h1 { color: #edf2fa; }
+.app-shell.theme-dark .sidebar-toggle, .app-shell.theme-dark .search-button, .app-shell.theme-dark .theme-button, .app-shell.theme-dark .refresh-button, .app-shell.theme-dark .profile-trigger, .app-shell.theme-dark .profile-dropdown, .app-shell.theme-dark .secondary { background: #1b2a40; border-color: #334157; color: #dce6f4; }
+.app-shell.theme-dark .side-nav button { color: #aab9cd; }
+.app-shell.theme-dark .side-nav button:hover { color: #f8dcba; background: #263750; border-color: #35455a; }
+.app-shell.theme-dark .side-nav button.active { color: #fff; background: linear-gradient(120deg,#b27937,#72431f); border-color: #966335; }
+.app-shell.theme-dark .profile-trigger-copy strong, .app-shell.theme-dark .profile-dropdown-user strong { color: #edf1f7; }
+.app-shell.theme-dark .profile-dropdown-user { border-bottom-color: #334157; }
+.app-shell.theme-dark .profile-dropdown button { color: #d4deed; }
+.app-shell.theme-dark .profile-dropdown button:hover { background: #273750; }
+.app-shell.theme-dark .profile-dropdown button:last-child { color: #f2a8a2; }
+.app-shell.theme-dark .metric, .app-shell.theme-dark .panel, .app-shell.theme-dark .menu-item, .app-shell.theme-dark .daily-close, .app-shell.theme-dark .payment-summary article, .app-shell.theme-dark .daily-report, .app-shell.theme-dark .expense-card, .app-shell.theme-dark .basket, .app-shell.theme-dark .entry-modal, .app-shell.theme-dark .receipt-modal, .app-shell.theme-dark .confirm-dialog { background: #172237; border-color: #2c3a50; color: #edf1f7; box-shadow: 0 9px 28px rgba(0,0,0,.14); }
+.app-shell.theme-dark .panel-head, .app-shell.theme-dark .table-pagination { border-color: #2d3a4d; }
+.app-shell.theme-dark .metric > strong, .app-shell.theme-dark .panel-head h3, .app-shell.theme-dark .page-tools h3, .app-shell.theme-dark .menu-copy h3, .app-shell.theme-dark .menu-copy strong, .app-shell.theme-dark .order-row strong, .app-shell.theme-dark .table-row strong, .app-shell.theme-dark .transaction strong, .app-shell.theme-dark .daily-report strong, .app-shell.theme-dark .report-splits b, .app-shell.theme-dark .report-splits > strong, .app-shell.theme-dark .basket strong, .app-shell.theme-dark .receipt-total strong { color: #edf1f7; }
+.app-shell.theme-dark .metric > span, .app-shell.theme-dark .metric > small, .app-shell.theme-dark .panel-head span, .app-shell.theme-dark .page-tools p, .app-shell.theme-dark .menu-copy span, .app-shell.theme-dark .menu-copy small, .app-shell.theme-dark .transaction div small, .app-shell.theme-dark .order-row small, .app-shell.theme-dark .expense-card p, .app-shell.theme-dark .daily-report small, .app-shell.theme-dark .report-date small, .app-shell.theme-dark .basket-line small { color: #a5b3c8; }
+.app-shell.theme-dark .table-head, .app-shell.theme-dark .command-footer { background: #1b293d; border-color: #304056; color: #bdc9d8; }
+.app-shell.theme-dark .table-row, .app-shell.theme-dark .transaction, .app-shell.theme-dark .order-row, .app-shell.theme-dark .basket-line { border-bottom-color: #2d3b50; }
+.app-shell.theme-dark .table-row:hover, .app-shell.theme-dark .quick-panel > button:hover { background: #202f45; }
+.app-shell.theme-dark .counter-menu button { background: #1b293d; border-color: #344257; color: #e5edf7; }
+.app-shell.theme-dark .counter-menu button.selected { background: #302d2a; border-color: #ac8248; }
+.app-shell.theme-dark .counter-item-foot strong, .app-shell.theme-dark .counter-item-name { color: #f1e8dd; }
+.app-shell.theme-dark .report-toolbar, .app-shell.theme-dark .page-date-filter, .app-shell.theme-dark .search-field, .app-shell.theme-dark .quantity-stepper, .app-shell.theme-dark .stock-stepper, .app-shell.theme-dark .payment-choice button { background: #202d41; border-color: #344359; color: #e4ebf5; }
+.app-shell.theme-dark input, .app-shell.theme-dark select { color-scheme: dark; }
+.app-shell.theme-dark .report-toolbar input, .app-shell.theme-dark .page-date-filter input, .app-shell.theme-dark .search-field input, .app-shell.theme-dark .entry-modal input, .app-shell.theme-dark .entry-modal select { background: #1b293d; border-color: #35465c; color: #f3f6fc; }
+.app-shell.theme-dark .entry-modal label, .app-shell.theme-dark .report-toolbar label, .app-shell.theme-dark .expense-card h3 { color: #cfdaea; }
+.app-shell.theme-dark .row-actions button, .app-shell.theme-dark .table-pagination button { background: #26364b; border-color: #3a4b61; color: #cad7e6; }
+.app-shell.theme-dark .status.completed { background: #354153; color: #d0d8e5; }
+.app-shell.theme-dark .status.ready { background: #5f482b; color: #ffe0a3; }
+.app-shell.theme-dark .payment-summary small, .app-shell.theme-dark .payment-summary strong, .app-shell.theme-dark .cash-hero small { color: #e5e9f1; }
+.app-shell.theme-dark .command-dialog { background: #172237; border-color: #334157; }
+.app-shell.theme-dark .command-search, .app-shell.theme-dark .command-footer, .app-shell.theme-dark .command-section + .command-section { border-color: #334157; }
+.app-shell.theme-dark .command-search input { color: #edf1f7; }
+.app-shell.theme-dark .command-search button, .app-shell.theme-dark .command-footer kbd { background: #26364b; color: #ccd8e7; border-color: #34465d; }
+.app-shell.theme-dark .command-section button { color: #e0e9f5; }
+.app-shell.theme-dark .command-section button:hover { background: #26364b; }
+.app-shell.theme-dark .command-section button small { color: #9dadc1; }
+.app-shell.theme-dark .command-result-icon { background: #40352a; color: #e6b777; }
+.app-shell.theme-dark .confirm-dialog h2 { color: #f2f5fa; }
+.app-shell.theme-dark .confirm-dialog p { color: #b1bfd2; }
+.app-shell.theme-dark .error-banner { background: #482a2a; color: #ffd4d1; border-color: #734747; }
+@media (prefers-reduced-motion: reduce) { .app-shell * { transition-duration: 0ms !important; animation-duration: .01ms !important; } }

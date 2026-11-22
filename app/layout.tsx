@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 
 import ClerkAppProvider from "@/components/ClerkAppProvider";
 import "./globals.css";
+import "./premium.css";
 
 export const metadata: Metadata = {
   applicationName: "Irani Tea",

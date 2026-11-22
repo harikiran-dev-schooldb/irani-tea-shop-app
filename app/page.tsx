@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, ReactNode, useCallback, useEffect, useState } from "react";
+import { FormEvent, ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { useAuth, useClerk, useUser } from "@clerk/nextjs";
 import {
   Banknote,
@@ -9,6 +9,11 @@ import {
   CalendarDays,
   Check,
   ChevronRight,
+  ChevronDown,
+  Moon,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Sun,
   CircleDollarSign,
   Cloud,
   Coffee,
@@ -38,6 +43,7 @@ import {
 import Image from "next/image";
 
 import WhatsAppAuthGate from "@/components/WhatsAppAuthGate";
+import ShopCommandMenu from "@/components/ShopCommandMenu";
 import type {
   DailyClosing,
   MenuItem,
@@ -253,6 +259,17 @@ function ShopManager() {
   const [query, setQuery] = useState("");
   const [selectedDate, setSelectedDate] = useState("");
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [theme, setTheme] = useState<"light" | "dark">("light");
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const profileRef = useRef<HTMLDivElement>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{
+    kind: "transaction" | "order";
+    id: string;
+  } | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
   const [refreshing, setRefreshing] = useState(false);
   const [editTarget, setEditTarget] = useState<EditTarget | null>(null);
   const [receipt, setReceipt] = useState<ReceiptData | null>(null);
@@ -332,6 +349,50 @@ function ShopManager() {
   }, [signOut, signingOut]);
 
   useEffect(() => {
+    setSidebarCollapsed(window.localStorage.getItem("irani-tea-sidebar-collapsed") === "true");
+    setTheme(window.localStorage.getItem("irani-tea-workspace-theme") === "dark" ? "dark" : "light");
+  }, []);
+
+  useEffect(() => {
+    const onShortcut = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        setProfileOpen(false);
+        setSearchOpen((current) => !current);
+      }
+      if (event.key === "Escape") {
+        setSearchOpen(false);
+        setProfileOpen(false);
+      }
+    };
+    window.addEventListener("keydown", onShortcut);
+    return () => window.removeEventListener("keydown", onShortcut);
+  }, []);
+
+  useEffect(() => {
+    if (!profileOpen) return;
+    const onOutsideClick = (event: PointerEvent) => {
+      if (!profileRef.current?.contains(event.target as Node)) {
+        setProfileOpen(false);
+      }
+    };
+    document.addEventListener("pointerdown", onOutsideClick);
+    return () => document.removeEventListener("pointerdown", onOutsideClick);
+  }, [profileOpen]);
+
+  const toggleTheme = () => {
+    const next = theme === "light" ? "dark" : "light";
+    window.localStorage.setItem("irani-tea-workspace-theme", next);
+    setTheme(next);
+  };
+
+  const toggleSidebar = () => {
+    const next = !sidebarCollapsed;
+    window.localStorage.setItem("irani-tea-sidebar-collapsed", String(next));
+    setSidebarCollapsed(next);
+  };
+
+  useEffect(() => {
     queueMicrotask(() => void loadData());
     if ("serviceWorker" in navigator)
       navigator.serviceWorker.register("/sw.js").catch(() => undefined);
@@ -375,9 +436,25 @@ function ShopManager() {
     return normalized;
   }
 
-  async function removeRecord(kind: "transaction" | "order", id: string) {
-    if (!window.confirm("Delete this record permanently?")) return;
-    await post({ kind: `${kind}-delete`, id });
+  function removeRecord(kind: "transaction" | "order", id: string) {
+    setDeleteError("");
+    setDeleteTarget({ kind, id });
+  }
+
+  async function confirmDelete() {
+    if (!deleteTarget || deleting) return;
+    setDeleting(true);
+    setDeleteError("");
+    try {
+      await post({ kind: `${deleteTarget.kind}-delete`, id: deleteTarget.id });
+      setDeleteTarget(null);
+    } catch (deleteFailure) {
+      setDeleteError(
+        deleteFailure instanceof Error ? deleteFailure.message : "Could not delete this record.",
+      );
+    } finally {
+      setDeleting(false);
+    }
   }
 
   async function installApp() {
@@ -433,7 +510,7 @@ function ShopManager() {
   );
 
   return (
-    <div className="app-shell">
+    <div className={`app-shell${sidebarCollapsed ? " is-collapsed" : ""}${theme === "dark" ? " theme-dark" : ""}`}>
       {mobileNavOpen ? (
         <button
           className="sidebar-backdrop"
@@ -457,10 +534,24 @@ function ShopManager() {
             <small>Shop manager</small>
           </div>
         </div>
+        <button
+          className="sidebar-toggle"
+          type="button"
+          aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          onClick={toggleSidebar}
+        >
+          {sidebarCollapsed ? <PanelLeftOpen size={17} /> : <PanelLeftClose size={17} />}
+          <span>{sidebarCollapsed ? "Expand" : "Collapse"}</span>
+        </button>
         <nav className="side-nav" aria-label="App navigation">
           {nav.map(({ id, label, icon: Icon }) => (
             <button
               key={id}
+              type="button"
+              title={label}
+              aria-label={label}
+              aria-current={view === id ? "page" : undefined}
               className={view === id ? "active" : ""}
               onClick={() => {
                 setView(id);
@@ -489,7 +580,7 @@ function ShopManager() {
           disabled={signingOut}
           onClick={() => void handleSignOut()}
         >
-          <LogOut size={18} /> {signingOut ? "Signing out…" : "Sign out"}
+          <LogOut size={18} /> <span className="settings-label">{signingOut ? "Signing out…" : "Sign out"}</span>
         </button>
         <div className="owner-card">
           <span className="owner-avatar">
@@ -520,7 +611,7 @@ function ShopManager() {
               alt=""
             />
             <div>
-              <p>{todayLabel}</p>
+              <p>Irani Tea workspace <span className="header-date">· {todayLabel}</span></p>
               <h1>{nav.find((item) => item.id === view)?.label}</h1>
             </div>
           </div>
@@ -545,6 +636,15 @@ function ShopManager() {
               </button>
             ) : null}
             <button
+              className="theme-button"
+              type="button"
+              title={theme === "light" ? "Switch to dark mode" : "Switch to light mode"}
+              aria-label={theme === "light" ? "Switch to dark mode" : "Switch to light mode"}
+              onClick={toggleTheme}
+            >
+              {theme === "light" ? <Moon size={18} /> : <Sun size={18} />}
+            </button>
+            <button
               className="refresh-button"
               aria-label="Refresh shop data"
               title="Refresh shop data"
@@ -553,15 +653,53 @@ function ShopManager() {
             >
               <RefreshCw className={refreshing ? "spinning" : ""} size={18} />
             </button>
-            <button className="search-button" aria-label="Search">
+            <button
+              className="search-button"
+              type="button"
+              aria-label="Search workspace"
+              title="Search workspace (⌘K / Ctrl+K)"
+              onClick={() => setSearchOpen(true)}
+            >
               <Search size={19} />
+              <span className="search-shortcut">⌘ K</span>
             </button>
             <button className="quick-order" onClick={() => setModal("order")}>
               <Plus size={18} /> New order
             </button>
-            <span className="avatar">
-              <Image src="/icon.svg" width={40} height={40} alt="" />
-            </span>
+            <div className="profile-menu-shell" ref={profileRef}>
+              <button
+                className="profile-trigger"
+                type="button"
+                aria-label="Open account menu"
+                aria-expanded={profileOpen}
+                aria-haspopup="menu"
+                onClick={() => setProfileOpen((current) => !current)}
+              >
+                <span className="profile-avatar"><UserRound size={18} /></span>
+                <span className="profile-trigger-copy">
+                  <strong>{ownerName}</strong>
+                  <small>{ownerRole}</small>
+                </span>
+                <ChevronDown className="profile-chevron" size={16} />
+              </button>
+              {profileOpen ? (
+                <div className="profile-dropdown" role="menu">
+                  <div className="profile-dropdown-user">
+                    <strong>{ownerName}</strong>
+                    <small>{ownerRole}</small>
+                  </div>
+                  <button type="button" role="menuitem" onClick={() => {
+                    setView("dashboard");
+                    setProfileOpen(false);
+                  }}>
+                    <LayoutDashboard size={17} /> Dashboard
+                  </button>
+                  <button type="button" role="menuitem" disabled={signingOut} onClick={() => void handleSignOut()}>
+                    <LogOut size={17} /> {signingOut ? "Signing out…" : "Sign out"}
+                  </button>
+                </div>
+              ) : null}
+            </div>
           </div>
         </header>
 
@@ -648,6 +786,55 @@ function ShopManager() {
         ) : null}
       </main>
 
+      <ShopCommandMenu
+        open={searchOpen}
+        onClose={() => setSearchOpen(false)}
+        menu={data.menu}
+        onNavigate={(nextView) => {
+          setView(nextView);
+          setMobileNavOpen(false);
+        }}
+        onMenuSearch={(term) => {
+          setQuery(term);
+          setView("menu");
+          setMobileNavOpen(false);
+        }}
+        onNewOrder={() => {
+          setModal("order");
+          setSearchOpen(false);
+        }}
+      />
+
+      {deleteTarget ? (
+        <div className="modal-backdrop" onClick={() => {
+          if (!deleting) setDeleteTarget(null);
+        }}>
+          <section
+            className="confirm-dialog"
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="delete-dialog-title"
+            aria-describedby="delete-dialog-description"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <span className="confirm-dialog-icon"><Trash2 size={21} /></span>
+            <h2 id="delete-dialog-title">Delete this {deleteTarget.kind}?</h2>
+            <p id="delete-dialog-description">
+              This action permanently removes the record from the shop. It cannot be undone.
+            </p>
+            {deleteError ? <p className="confirm-error" role="alert">{deleteError}</p> : null}
+            <div className="confirm-dialog-actions">
+              <button type="button" className="secondary" disabled={deleting} onClick={() => setDeleteTarget(null)}>
+                Cancel
+              </button>
+              <button type="button" className="danger-button" disabled={deleting} onClick={() => void confirmDelete()}>
+                {deleting ? "Deleting…" : "Delete record"}
+              </button>
+            </div>
+          </section>
+        </div>
+      ) : null}
+
       {modal ? (
         <EntryModal kind={modal} close={() => setModal(null)} post={post} />
       ) : null}
@@ -732,7 +919,7 @@ function Dashboard({
           <p className="eyebrow">
             {reportDate ? "Selected day at a glance" : "All-time at a glance"}
           </p>
-          <h2>Good evening, boss.</h2>
+          <h2>Welcome to Irani Tea.</h2>
           <p>
             {reportDate
               ? `Showing the report for ${new Date(`${reportDate}T12:00:00`).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}.`
@@ -987,6 +1174,14 @@ function Orders({
   edit: (target: EditTarget) => void;
   remove: (id: string) => void;
 }) {
+  const [page, setPage] = useState(1);
+  const pageSize = 10;
+  const totalPages = Math.max(1, Math.ceil(orders.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const visibleOrders = orders.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+  useEffect(() => setPage(1), [reportDate]);
+
   return (
     <div className="page-content">
       <ReportDateFilter value={reportDate} onChange={setReportDate} />
@@ -1008,7 +1203,7 @@ function Orders({
           <span>Actions</span>
         </div>
         {orders.length ? (
-          orders.map((order) => (
+          visibleOrders.map((order) => (
             <div className="table-row" key={order.id}>
               <strong>#{order.orderNo}</strong>
               <span>{order.customer}</span>
@@ -1054,6 +1249,22 @@ function Orders({
             text="Add your first counter order to start the day."
           />
         )}
+        {orders.length > pageSize ? (
+          <div className="table-pagination" aria-label="Orders pagination">
+            <span>
+              Showing {(currentPage - 1) * pageSize + 1}–{Math.min(currentPage * pageSize, orders.length)} of {orders.length} orders
+            </span>
+            <div>
+              <button type="button" disabled={currentPage === 1} onClick={() => setPage(currentPage - 1)}>
+                Previous
+              </button>
+              <strong>Page {currentPage} of {totalPages}</strong>
+              <button type="button" disabled={currentPage === totalPages} onClick={() => setPage(currentPage + 1)}>
+                Next
+              </button>
+            </div>
+          </div>
+        ) : null}
       </section>
     </div>
   );
