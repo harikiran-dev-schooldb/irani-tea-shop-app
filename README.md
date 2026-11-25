@@ -78,3 +78,12 @@ The standalone PWA now exposes **Counter**, **Inventory**, and **Profit reports*
 The service worker caches only public static assets and the generic offline page. It **never caches authenticated API responses, financial reports, session pages, or shop HTML**. An already-open authenticated tab can still show the most recent successful shop snapshot, stored per Clerk user ID in local storage. No financial edits are queued or replayed while offline, to prevent duplicate payments.
 
 For Android use the browser Install app option. On iPhone open the site in Safari, tap Share, and choose Add to Home Screen. Fresh offline launches show a privacy-safe reconnect page instead of reusing another staff member's authenticated page.
+
+## Online ordering (pilot)
+- Customer storefront: `/order`; independent install manifest.
+- Staff inbox: `/online-admin`; existing Clerk authorization.
+- Run `npm run db:migrate` against a staging database first. No existing table is changed.
+- Set `ONLINE_ORDERING_ENABLED=true` only after end-to-end testing and configuring edge rate limiting/bot protection for POST /api/online/orders. Phone numbers are not OTP verified; one active order per phone is enforced, not proof of identity.
+- Pickup is the default. Set `ONLINE_DELIVERY_ENABLED=true` only when staff can confirm serviceability; optional `ONLINE_DELIVERY_FEE` (default 20 rupees) and `ONLINE_DELIVERY_MINIMUM` (default 99 rupees). No automatic distance validation.
+- Requests do not reserve stock. Staff verify availability and phone before accepting. The existing POS checkout records collected payment, line items, stock, recipe consumption and completion atomically. Delivery fee is included in the sale total. Price changes require staff resolution; do not promise fulfillment before confirming availability. No payment gateway, automatic refunds, GPS or background push notifications.
+- Test: submit a pickup order; confirm it, prepare, mark ready, record actual payment; verify POS sale and stock changes exactly once even with repeated completion. Check cancelled requests, sold-out items, changed prices, unauthorised staff API, tracking privacy, offline behavior, delivery minimum, and concurrent attempts. Do not use real customer details in staging.

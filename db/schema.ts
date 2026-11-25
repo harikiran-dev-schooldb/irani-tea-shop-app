@@ -4,6 +4,7 @@ import {
   date,
   index,
   integer,
+  jsonb,
   pgEnum,
   pgSequence,
   pgTable,
@@ -180,3 +181,23 @@ export const ingredientMovements = pgTable(
     index("ingredient_movements_created_at_idx").on(table.createdAt),
   ],
 );
+
+export type OnlineLine = { id: string; name: string; quantity: number; unitPrice: number };
+export const onlineOrders = pgTable("online_orders", {
+  id: uuid("id").primaryKey(),
+  customer: text("customer").notNull(),
+  phone: text("phone").notNull(),
+  address: text("address").notNull().default(""),
+  fulfillment: text("fulfillment").notNull(),
+  status: text("status").notNull().default("pending"),
+  lines: jsonb("lines").$type<OnlineLine[]>().notNull(),
+  subtotal: integer("subtotal").notNull(),
+  deliveryFee: integer("delivery_fee").notNull().default(0),
+  total: integer("total").notNull(),
+  posOrderId: uuid("pos_order_id"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index("online_orders_created_idx").on(table.createdAt),
+  uniqueIndex("online_orders_active_phone_idx").on(table.phone).where(sql`status in ('pending','accepted','preparing','ready','out_for_delivery')`),
+]);

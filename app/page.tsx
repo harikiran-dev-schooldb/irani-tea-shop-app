@@ -41,6 +41,7 @@ import {
   X,
 } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 
 import WhatsAppAuthGate from "@/components/WhatsAppAuthGate";
 import ShopCommandMenu from "@/components/ShopCommandMenu";
@@ -589,6 +590,8 @@ function ShopManager() {
               ) : null}
             </button>
           ))}
+          <Link href="/online-admin" className="settings-row"><ShoppingBag size={19} /> <span>Online orders</span></Link>
+          <Link href="/order" className="settings-row"><Store size={19} /> <span>Customer storefront</span></Link>
         </nav>
         <div className="shop-status">
           <span />

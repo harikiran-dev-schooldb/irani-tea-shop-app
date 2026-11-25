@@ -10,6 +10,7 @@ import {
   recipeIngredients,
   menuItems,
   orderItems,
+  onlineOrders,
   orders,
   transactions,
 } from "@/db/schema";
@@ -153,7 +154,22 @@ export async function POST(request: Request) {
         paymentMode: type === "sale" ? paymentMode(payload.paymentMode) : "cash",
         createdAt: transactionDate(payload.date, payload.time),
       });
-    } else if (kind === "order") {
+    } else if (kind === "order" || kind === "online-order-complete") {
+      let online: typeof onlineOrders.$inferSelect | undefined;
+      if (kind === "online-order-complete") {
+        const id = cleanText(payload.id);
+        if (!/^[0-9a-f-]{36}$/i.test(id)) throw new Error("Invalid online order.");
+        [online] = await db.select().from(onlineOrders).where(eq(onlineOrders.id, id));
+        if (!online || online.status !== (online.fulfillment === "delivery" ? "out_for_delivery" : "ready") || online.posOrderId)
+          throw new Error("Order is not ready for payment or was already completed.");
+        if (payload.paymentMode !== "cash" && payload.paymentMode !== "online") throw new Error("Confirm payment received.");
+        payload.customer = online.customer;
+        payload.items = online.lines;
+        payload.total = online.total;
+        payload.itemCount = online.lines.reduce((sum, line) => sum + line.quantity, 0);
+        delete payload.date;
+        delete payload.time;
+      }
       const customer = cleanText(payload.customer, "Walk-in") || "Walk-in";
       const paidBy = paymentMode(payload.paymentMode);
       const createdAt = transactionDate(payload.date, payload.time) ?? new Date();
@@ -191,7 +207,8 @@ export async function POST(request: Request) {
       const itemCount = positiveNumber(payload.itemCount, "Item count");
       if (verifiedLines.length) {
         const actualCount = verifiedLines.reduce((sum, line) => sum + line.quantity, 0);
-        const actualTotal = verifiedLines.reduce((sum, line) => sum + line.quantity * line.unitPrice, 0);
+        const actualTotal = verifiedLines.reduce((sum, line) => sum + line.quantity * line.unitPrice, 0) + (online?.deliveryFee ?? 0);
+        if (online && verifiedLines.some(line => online!.lines.find(item => item.id === line.menuItemId)?.unitPrice !== line.unitPrice)) throw new Error("Menu price changed since the order was placed. Resolve with the customer before completing.");
         if (itemCount !== actualCount || total !== actualTotal) {
           throw new Error("The menu price or item quantity changed. Refresh your order and try again.");
         }
@@ -223,9 +240,13 @@ export async function POST(request: Request) {
       // Neon HTTP batch is atomic: order, payment, items, and inventory succeed
       // together. Concurrent stock shortages fail the final checks and roll back.
       await db.batch([
-        db.insert(orders).values({ id: orderId, customer, itemCount, total, createdAt }),
+        ...(online ? [
+          db.update(onlineOrders).set({status:"completed",posOrderId:orderId,updatedAt:new Date()}).where(and(eq(onlineOrders.id,online.id),eq(onlineOrders.status,online.status),sql`${onlineOrders.posOrderId} is null`)),
+          db.execute(sql`select 1 / (case when exists (select 1 from ${onlineOrders} where ${onlineOrders.id} = ${online.id} and ${onlineOrders.posOrderId} = ${orderId}) then 1 else 0 end)`),
+        ] : []),
+        db.insert(orders).values({ id: orderId, customer, itemCount, total, createdAt, ...(online ? {status:"completed" as const} : {}) }),
         db.insert(transactions).values({
-          type: "sale", category: "Orders", amount: total,
+          type: "sale", category: online ? "Online orders" : "Orders", amount: total,
           note: sql`'Order #' || (select ${orders.orderNo} from ${orders} where ${orders.id} = ${orderId})`,
           paymentMode: paidBy, orderId, createdAt,
         }),

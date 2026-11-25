@@ -37,7 +37,7 @@ export default function PrivacyPolicyPage() {
         <h1 style={{ margin: "0 0 .35rem", fontSize: "clamp(2rem, 6vw, 3.5rem)" }}>
           Privacy Policy
         </h1>
-        <p style={{ color: "#806949" }}>Last updated: 16 October 2026</p>
+        <p style={{ color: "#806949" }}>Last updated: 25 November 2026</p>
 
         <p>
           Irani Tea Shop Manager is a business application used by authorised tea-shop staff to
@@ -57,6 +57,10 @@ export default function PrivacyPolicyPage() {
           </ul>
         </section>
 
+        <section style={sectionStyle}>
+          <h2>Customer online orders</h2>
+          <p>When you request an online order, we process your name, mobile number, selected items and delivery address (if applicable) to contact you and fulfill your order. The phone number is not verified by the pilot. A private tracking code displays order status without displaying contact details. Keep this code private. Payments are collected at pickup or delivery; no card or bank credentials are collected through the storefront. Contact us below for access or deletion requests.</p>
+        </section>
         <section style={sectionStyle}>
           <h2>How information is used and stored</h2>
           <p>
