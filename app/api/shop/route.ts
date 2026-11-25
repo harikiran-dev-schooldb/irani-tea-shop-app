@@ -240,11 +240,11 @@ export async function POST(request: Request) {
       // Neon HTTP batch is atomic: order, payment, items, and inventory succeed
       // together. Concurrent stock shortages fail the final checks and roll back.
       await db.batch([
+        db.insert(orders).values({ id: orderId, customer, itemCount, total, createdAt, ...(online ? {status:"completed" as const} : {}) }),
         ...(online ? [
           db.update(onlineOrders).set({status:"completed",posOrderId:orderId,updatedAt:new Date()}).where(and(eq(onlineOrders.id,online.id),eq(onlineOrders.status,online.status),sql`${onlineOrders.posOrderId} is null`)),
           db.execute(sql`select 1 / (case when exists (select 1 from ${onlineOrders} where ${onlineOrders.id} = ${online.id} and ${onlineOrders.posOrderId} = ${orderId}) then 1 else 0 end)`),
         ] : []),
-        db.insert(orders).values({ id: orderId, customer, itemCount, total, createdAt, ...(online ? {status:"completed" as const} : {}) }),
         db.insert(transactions).values({
           type: "sale", category: online ? "Online orders" : "Orders", amount: total,
           note: sql`'Order #' || (select ${orders.orderNo} from ${orders} where ${orders.id} = ${orderId})`,
