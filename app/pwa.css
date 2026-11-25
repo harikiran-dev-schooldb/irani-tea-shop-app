@@ -5,3 +5,23 @@
 .app-shell .pwa-update button { border: 1px solid #ad824f; border-radius: 9px; padding: 9px 12px; background: #8a5624; color: #fff; cursor: pointer; font-size: 11px; font-weight: 800; }
 .app-shell .pwa-update .pwa-dismiss { padding: 8px; border: 0; background: transparent; color: #956839; }
 .app-shell.theme-dark .pwa-update { border-color: #654f38; background: #30291f; color: #f0d3a3; }
+
+/* Persistent phone navigation, including iOS standalone safe areas. */
+.app-shell .staff-mobile-nav, .app-shell .mobile-nav-close { display: none; }
+@media (max-width: 900px) {
+  .app-shell .workspace { min-width: 0; padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px)); }
+  .app-shell .topbar { position: sticky; top: 0; z-index: 30; padding: calc(10px + env(safe-area-inset-top, 0px)) 14px 10px; flex-wrap: wrap; gap: 8px; }
+  .app-shell .topbar-title { flex: 1 1 auto; min-width: 0; }
+  .app-shell .mobile-menu { display: grid; flex: 0 0 44px; width: 44px; height: 44px; color: #75421b; background: #fff7e9; }
+  .app-shell .top-actions { flex-wrap: wrap; justify-content: flex-end; }
+  .app-shell .staff-mobile-nav { position: fixed; z-index: 45; bottom: 0; left: 0; right: 0; display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); gap: 3px; padding: 7px max(8px,env(safe-area-inset-right,0px)) calc(8px + env(safe-area-inset-bottom,0px)) max(8px,env(safe-area-inset-left,0px)); background: #fff; border-top: 1px solid #e7eaf0; box-shadow: 0 -6px 24px #17223712; }
+  .app-shell .staff-mobile-nav button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 52px; min-width: 0; border: 0; border-radius: 12px; background: transparent; color: #626c7c; font: 700 11px/1.2 var(--display); cursor: pointer; }
+  .app-shell .staff-mobile-nav button[aria-current="page"] { color: #85491f; background: #f9ebd9; }
+  .app-shell .staff-mobile-nav button:focus-visible { outline: 2px solid #ad763a; outline-offset: -2px; }
+  .app-shell .sidebar { z-index: 60; overflow-y: auto; overscroll-behavior: contain; }
+  .app-shell .mobile-nav-close { display: flex; align-items: center; gap: 8px; justify-content: flex-end; flex: 0 0 auto; padding: 10px; min-height: 44px; border: 0; background: transparent; color: var(--ink); cursor: pointer; }
+  .app-shell.theme-dark .staff-mobile-nav { background: #121d2f; border-color: #2b384c; }
+  .app-shell.theme-dark .staff-mobile-nav button { color: #b8c5d7; }
+  .app-shell.theme-dark .staff-mobile-nav button[aria-current="page"] { background: #40352a; color: #f0d3a3; }
+  .app-shell.theme-dark .mobile-menu { background: #1b2a40; color: #f0d3a3; }
+}

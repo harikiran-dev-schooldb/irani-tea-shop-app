@@ -543,6 +543,7 @@ function ShopManager() {
         />
       ) : null}
       <aside className={`sidebar${mobileNavOpen ? " mobile-open" : ""}`}>
+        <button type="button" className="mobile-nav-close" aria-label="Close navigation" onClick={() => setMobileNavOpen(false)}><X size={20}/><span>Close menu</span></button>
         <div className="shop-brand">
           <span className="brand-cup">
             <Image
@@ -622,6 +623,8 @@ function ShopManager() {
           <div className="topbar-title">
             <button
               className="mobile-menu"
+              type="button"
+              aria-expanded={mobileNavOpen}
               aria-label="Open main navigation"
               onClick={() => setMobileNavOpen(true)}
             >
@@ -813,6 +816,22 @@ function ShopManager() {
           />
         ) : null}
       </main>
+
+      <nav className="staff-mobile-nav" aria-label="Quick mobile navigation">
+        {nav.filter(item => ["dashboard", "storefront", "orders", "menu"].includes(item.id))
+          .sort((a, b) => ["dashboard", "storefront", "orders", "menu"].indexOf(a.id) - ["dashboard", "storefront", "orders", "menu"].indexOf(b.id))
+          .map(({ id, label, icon: Icon }) => (
+          <button key={id} type="button" aria-current={view === id ? "page" : undefined}
+            onClick={() => { setView(id); setMobileNavOpen(false); window.scrollTo({ top: 0, behavior: "instant" }); }}>
+            <Icon size={21} aria-hidden="true" />
+            <span>{id === "dashboard" ? "Home" : label}</span>
+          </button>
+        ))}
+        <button type="button" aria-label="Open all navigation options" aria-expanded={mobileNavOpen}
+          onClick={() => setMobileNavOpen(current => !current)}>
+          <Menu size={21} aria-hidden="true" /><span>More</span>
+        </button>
+      </nav>
 
       <ShopCommandMenu
         key={searchOpen ? "open" : "closed"}

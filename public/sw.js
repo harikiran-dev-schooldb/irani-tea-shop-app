@@ -1,5 +1,5 @@
 /* Irani Tea PWA — authenticated data is never cached by the service worker. */
-const STATIC_CACHE = "irani-tea-static-v4";
+const STATIC_CACHE = "irani-tea-static-v5";
 const STATIC = [
   "/offline.html",
   "/manifest.webmanifest",
