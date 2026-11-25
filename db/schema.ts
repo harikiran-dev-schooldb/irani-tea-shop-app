@@ -201,3 +201,9 @@ export const onlineOrders = pgTable("online_orders", {
   index("online_orders_created_idx").on(table.createdAt),
   uniqueIndex("online_orders_active_phone_idx").on(table.phone).where(sql`status in ('pending','accepted','preparing','ready','out_for_delivery')`),
 ]);
+
+export const onlineRateLimits = pgTable("online_rate_limits", {
+  key: text("key").primaryKey(),
+  bucket: integer("bucket").notNull(),
+  hits: integer("hits").notNull().default(1),
+});

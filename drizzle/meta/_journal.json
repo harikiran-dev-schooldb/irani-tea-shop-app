@@ -43,6 +43,13 @@
       "when": 1795600000000,
       "tag": "0005_online_orders",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1795629800000,
+      "tag": "0006_online_verification",
+      "breakpoints": true
     }
   ]
 }

@@ -1,6 +1,7 @@
 import { and, eq, inArray } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { validProof } from "@/lib/customer-verification";
 import { getDb } from "@/db";
 import { menuItems, onlineOrders } from "@/db/schema";
 import { onlineEnabled, deliveryEnabled, deliveryFee, deliveryMinimum, orderInput } from "@/lib/online-ordering";
@@ -24,6 +25,7 @@ export async function POST(request: Request) {
     const parsed = orderInput.safeParse(JSON.parse(raw));
     if (!parsed.success) return reply({ error: "Check your name, phone and order quantities." }, 400);
     const p = parsed.data, db = getDb();
+    if (!validProof(p.phone,p.id,p.proof)) return reply({error:"Verify your mobile number before placing an order."},403);
     const [existing] = await db.select({ id: onlineOrders.id, status: onlineOrders.status, total: onlineOrders.total }).from(onlineOrders).where(eq(onlineOrders.id,p.id));
     if (existing) return reply(existing);
     if (p.fulfillment === "delivery" && (!deliveryEnabled() || p.address.length < 10)) return reply({ error: "Delivery is unavailable or address is incomplete." }, 400);

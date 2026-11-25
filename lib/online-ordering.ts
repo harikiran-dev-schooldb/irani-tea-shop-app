@@ -8,6 +8,7 @@ export const orderInput = z.object({
   address: z.string().trim().max(300).default(""),
   items: z.array(z.object({ id: z.string().uuid(), quantity: z.number().int().min(1).max(20) })).min(1).max(20),
   total: z.number().int().positive().max(10000),
+  proof: z.string().max(100),
 });
 export const onlineEnabled = () => process.env.ONLINE_ORDERING_ENABLED === "true";
 export const deliveryEnabled = () => process.env.ONLINE_DELIVERY_ENABLED === "true";
